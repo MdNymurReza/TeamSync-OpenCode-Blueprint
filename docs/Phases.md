@@ -47,7 +47,7 @@ Categories, descriptions, external links, private upload/download, storage polic
 
 ## Phase 9 — Activity, notifications, Team Pulse, search
 Activity, preferences, reminders, check-ins, authorized search.
-**Gate:** no content leakage, deduplicated reminders, preferences honored, search isolation. Missing push credentials means delivery tests are blocked.
+**Gate:** `VERIFIED` (Phase 9 migration `20261031030000_activity_notifications_pulse_search.sql` with append-only `activity_events` + `protect_activity_events_immutability` trigger, `notification_preferences` with default `minimize_lock_screen_content: true`, `notification_deliveries` with `UNIQUE (user_id, dedupe_key)` and `check_notification_recipient_membership` trigger, `team_pulse_checkins` with weekly uniqueness, and strict RLS; `notificationsService` with `isNotificationCategoryEnabled`, `buildNotificationDedupeKey`, `buildSafeNotificationPayload`, and `evaluateNotificationCandidate`; `pulseService` with UTC Monday `getWeekStartDateIso` and non-ranking `summarizeTeamPulse`; `searchService` with cross-project isolated `filterAuthorizedSearchResults`; updated `app/(tabs)/activity.tsx`, `app/(tabs)/profile.tsx`, `app/projects/[id]/index.tsx`, and new `app/projects/[id]/pulse.tsx`; 46 test suites, 178 tests passing with 0 TS errors and 0 lint warnings. Note: live external push provider delivery tests are `BLOCKED` when push provider credentials are not configured). Ready for Phase 10 authorization.
 
 ## Phase 10 — Hardening and beta release
 E2E flows, accessibility, pagination/performance, security checklist, deletion flows, docs, Android build/device smoke tests.

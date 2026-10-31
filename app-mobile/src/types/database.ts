@@ -33,6 +33,37 @@ export type ResourceCategory =
   | 'other';
 export type ResourceType = 'external_link' | 'file_upload';
 
+export type ActivityEventType =
+  | 'task_created'
+  | 'task_completed'
+  | 'task_assigned'
+  | 'milestone_created'
+  | 'milestone_completed'
+  | 'meeting_scheduled'
+  | 'minutes_recorded'
+  | 'decision_accepted'
+  | 'decision_superseded'
+  | 'resource_shared'
+  | 'pulse_submitted';
+
+export type ActivityEntityType =
+  | 'task'
+  | 'milestone'
+  | 'meeting'
+  | 'decision'
+  | 'resource'
+  | 'pulse';
+
+export type NotificationCategory =
+  | 'task_assignment'
+  | 'task_update'
+  | 'mention'
+  | 'deadline_reminder'
+  | 'meeting_reminder'
+  | 'pulse_reminder';
+
+export type TeamPulseStatus = 'on_track' | 'needs_support' | 'blocked';
+
 export interface Database {
   public: {
     Tables: {
@@ -794,6 +825,196 @@ export interface Database {
           },
         ];
       };
+      activity_events: {
+        Row: {
+          id: string;
+          project_id: string;
+          actor_id: string;
+          event_type: ActivityEventType;
+          entity_type: ActivityEntityType;
+          entity_id: string;
+          summary_text: string;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          actor_id: string;
+          event_type: ActivityEventType;
+          entity_type: ActivityEntityType;
+          entity_id: string;
+          summary_text: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          actor_id?: string;
+          event_type?: ActivityEventType;
+          entity_type?: ActivityEntityType;
+          entity_id?: string;
+          summary_text?: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'activity_events_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'activity_events_actor_id_fkey';
+            columns: ['actor_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      notification_preferences: {
+        Row: {
+          user_id: string;
+          task_assignments: boolean;
+          task_updates: boolean;
+          mentions: boolean;
+          deadline_reminders: boolean;
+          meeting_reminders: boolean;
+          team_pulse_reminders: boolean;
+          minimize_lock_screen_content: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          task_assignments?: boolean;
+          task_updates?: boolean;
+          mentions?: boolean;
+          deadline_reminders?: boolean;
+          meeting_reminders?: boolean;
+          team_pulse_reminders?: boolean;
+          minimize_lock_screen_content?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          task_assignments?: boolean;
+          task_updates?: boolean;
+          mentions?: boolean;
+          deadline_reminders?: boolean;
+          meeting_reminders?: boolean;
+          team_pulse_reminders?: boolean;
+          minimize_lock_screen_content?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notification_preferences_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      notification_deliveries: {
+        Row: {
+          id: string;
+          user_id: string;
+          project_id: string;
+          category: NotificationCategory;
+          dedupe_key: string;
+          title: string;
+          body: string;
+          is_read: boolean;
+          delivered_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          project_id: string;
+          category: NotificationCategory;
+          dedupe_key: string;
+          title: string;
+          body: string;
+          is_read?: boolean;
+          delivered_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          project_id?: string;
+          category?: NotificationCategory;
+          dedupe_key?: string;
+          title?: string;
+          body?: string;
+          is_read?: boolean;
+          delivered_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notification_deliveries_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'notification_deliveries_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      team_pulse_checkins: {
+        Row: {
+          id: string;
+          project_id: string;
+          user_id: string;
+          week_start_date: string;
+          status: TeamPulseStatus;
+          blocker_details: string | null;
+          follow_up_note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          user_id: string;
+          week_start_date: string;
+          status: TeamPulseStatus;
+          blocker_details?: string | null;
+          follow_up_note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          user_id?: string;
+          week_start_date?: string;
+          status?: TeamPulseStatus;
+          blocker_details?: string | null;
+          follow_up_note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'team_pulse_checkins_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'team_pulse_checkins_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -910,3 +1131,22 @@ export type DecisionUpdate = Database['public']['Tables']['decisions']['Update']
 export type Resource = Database['public']['Tables']['resources']['Row'];
 export type ResourceInsert = Database['public']['Tables']['resources']['Insert'];
 export type ResourceUpdate = Database['public']['Tables']['resources']['Update'];
+
+export type ActivityEvent = Database['public']['Tables']['activity_events']['Row'];
+export type ActivityEventInsert = Database['public']['Tables']['activity_events']['Insert'];
+
+export type NotificationPreference =
+  Database['public']['Tables']['notification_preferences']['Row'];
+export type NotificationPreferenceUpdate =
+  Database['public']['Tables']['notification_preferences']['Update'];
+
+export type NotificationDelivery =
+  Database['public']['Tables']['notification_deliveries']['Row'];
+export type NotificationDeliveryInsert =
+  Database['public']['Tables']['notification_deliveries']['Insert'];
+
+export type TeamPulseCheckin = Database['public']['Tables']['team_pulse_checkins']['Row'];
+export type TeamPulseCheckinInsert =
+  Database['public']['Tables']['team_pulse_checkins']['Insert'];
+export type TeamPulseCheckinUpdate =
+  Database['public']['Tables']['team_pulse_checkins']['Update'];

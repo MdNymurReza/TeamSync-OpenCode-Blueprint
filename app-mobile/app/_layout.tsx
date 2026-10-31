@@ -54,6 +54,10 @@ export default function RootLayout() {
           options={{ title: 'Resource Hub', headerShown: true }}
         />
         <Stack.Screen
+          name="projects/[id]/pulse"
+          options={{ title: 'Team Pulse', headerShown: true }}
+        />
+        <Stack.Screen
           name="projects/[id]/tasks/index"
           options={{ title: 'Tasks', headerShown: true }}
         />

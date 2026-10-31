@@ -42,6 +42,11 @@ import {
   resourcesService,
   ResourceWithDetails,
 } from '@/features/resources';
+import {
+  pulseService,
+  summarizeTeamPulse,
+  TeamPulseCheckinWithProfile,
+} from '@/features/pulse';
 import { ProjectInvitation } from '@/types/database';
 import { colors, radii, spacing, touchTargets, typography } from '@/theme';
 
@@ -57,6 +62,7 @@ export default function ProjectDetailsScreen() {
   const [meetings, setMeetings] = useState<MeetingWithDetails[]>([]);
   const [decisions, setDecisions] = useState<DecisionWithDetails[]>([]);
   const [resources, setResources] = useState<ResourceWithDetails[]>([]);
+  const [pulseCheckins, setPulseCheckins] = useState<TeamPulseCheckinWithProfile[]>([]);
   const [activeInvitation, setActiveInvitation] = useState<ProjectInvitation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -77,6 +83,7 @@ export default function ProjectDetailsScreen() {
       meetingsRes,
       decisionsRes,
       resourcesRes,
+      pulseRes,
     ] = await Promise.all([
       projectsService.fetchProjectDetails(id),
       projectsService.fetchProjectMembers(id),
@@ -95,6 +102,9 @@ export default function ProjectDetailsScreen() {
       resourcesService?.fetchProjectResources
         ? resourcesService.fetchProjectResources(id)
         : Promise.resolve({ data: [] as ResourceWithDetails[], error: null }),
+      pulseService?.fetchProjectPulseCheckins
+        ? pulseService.fetchProjectPulseCheckins(id)
+        : Promise.resolve({ data: [] as TeamPulseCheckinWithProfile[], error: null }),
     ]);
 
     if (projRes.error) {
@@ -137,6 +147,10 @@ export default function ProjectDetailsScreen() {
       setResources(resourcesRes.data);
     }
 
+    if (pulseRes.data) {
+      setPulseCheckins(pulseRes.data);
+    }
+
     setIsLoading(false);
   }, [id]);
 
@@ -154,6 +168,7 @@ export default function ProjectDetailsScreen() {
         meetingsRes,
         decisionsRes,
         resourcesRes,
+        pulseRes,
       ] = await Promise.all([
         projectsService.fetchProjectDetails(id),
         projectsService.fetchProjectMembers(id),
@@ -172,6 +187,9 @@ export default function ProjectDetailsScreen() {
         resourcesService?.fetchProjectResources
           ? resourcesService.fetchProjectResources(id)
           : Promise.resolve({ data: [] as ResourceWithDetails[], error: null }),
+        pulseService?.fetchProjectPulseCheckins
+          ? pulseService.fetchProjectPulseCheckins(id)
+          : Promise.resolve({ data: [] as TeamPulseCheckinWithProfile[], error: null }),
       ]);
       if (!isMounted) return;
 
@@ -205,6 +223,9 @@ export default function ProjectDetailsScreen() {
       }
       if (resourcesRes.data) {
         setResources(resourcesRes.data);
+      }
+      if (pulseRes.data) {
+        setPulseCheckins(pulseRes.data);
       }
       setIsLoading(false);
     })();
@@ -297,6 +318,7 @@ export default function ProjectDetailsScreen() {
     (m) => m.effectiveStatus === 'completed'
   ).length;
   const overdueMilestonesCount = milestones.filter((m) => m.isOverdue).length;
+  const pulseSummary = summarizeTeamPulse(pulseCheckins);
 
   return (
     <ScrollView
@@ -815,6 +837,50 @@ export default function ProjectDetailsScreen() {
         ) : (
           <Text style={styles.noPhasesText}>
             No links or files shared yet. Tap Resources to add Drive/GitHub links or private uploads.
+          </Text>
+        )}
+      </Card>
+
+      {/* Team Pulse Section */}
+      <Card style={styles.phasesCard}>
+        <SectionHeader
+          title={`Team Pulse (${pulseCheckins.length})`}
+          action={
+            <Button
+              title="Check-in"
+              variant="text"
+              size="sm"
+              onPress={() => router.push(`/projects/${project.id}/pulse` as Href)}
+            />
+          }
+          style={styles.cardHeaderRow}
+        />
+
+        {pulseCheckins.length > 0 ? (
+          <View style={styles.badgeRow}>
+            <Badge
+              label={`${pulseSummary.onTrackCount} On Track`}
+              variant="success"
+              size="sm"
+            />
+            {pulseSummary.needsSupportCount > 0 ? (
+              <Badge
+                label={`${pulseSummary.needsSupportCount} Needs Support`}
+                variant="warning"
+                size="sm"
+              />
+            ) : null}
+            {pulseSummary.blockedCount > 0 ? (
+              <Badge
+                label={`${pulseSummary.blockedCount} Blocked`}
+                variant="danger"
+                size="sm"
+              />
+            ) : null}
+          </View>
+        ) : (
+          <Text style={styles.noPhasesText}>
+            Optional weekly status & blocker check-ins for peer support (never used for member ranking).
           </Text>
         )}
       </Card>

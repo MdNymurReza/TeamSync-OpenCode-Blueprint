@@ -31,18 +31,18 @@ React Native + Expo + TypeScript; Expo Router; Supabase Auth/PostgreSQL/RLS/priv
 - [ ] Account/project deletion and retention.
 - [x] File size/MIME limits: Private `project-resources` storage bucket enforces a 10 MB (`10485760` bytes) file size limit and an explicit MIME allowlist (`application/pdf`, `text/plain`, `text/csv`, `text/markdown`, `application/json`, `application/zip`, `image/png`, `image/jpeg`, `image/webp`, and DOCX/XLSX/PPTX); enforced both client-side (`validateFileUploadConstraints`) and in PostgreSQL (`resources_payload_by_type_check` & `storage.buckets`).
 - [x] Date-only versus timestamp/timezone policy: Canonical UTC `TIMESTAMPTZ` across PostgreSQL (`starts_at`, `ends_at`, `decided_at`, `target_date`, `due_date`); `parseMeetingTimestamp` normalizes `YYYY-MM-DD`, `YYYY-MM-DD HH:MM`, and ISO offset strings into UTC ISO 8601.
-- [ ] Push provider and secret management.
+- [x] Push provider and secret management: In-app notification ledger (`public.notification_deliveries`) enforces `UNIQUE (user_id, dedupe_key)`, active project membership verification (`check_notification_recipient_membership`), category preferences (`public.notification_preferences`), and lock-screen privacy redaction (`minimize_lock_screen_content: true` by default). External push provider credentials (FCM/Expo Push) are never embedded in the mobile client; remote push delivery tests are explicitly marked `BLOCKED` until server-side push provider secrets are configured.
 - [x] Availability polls in MVP or deferred: Deferred to Post-MVP per `docs/Phases.md` ("Availability polls only if approved") to keep the core meeting schedule/agenda, minutes, and action-item workflow focused.
-- [ ] Activity retention/edit policy.
+- [x] Activity retention/edit policy: `public.activity_events` is strictly append-only (`protect_activity_events_immutability` trigger blocks `UPDATE` and `DELETE` on individual events; rows cascade-delete only if the parent project is deleted).
 - [ ] Offline write support (default: no silent offline mutation queue).
 
 ## Current state
-- Phase 8 completed and `VERIFIED`.
-- Current authorized phase: None (Phase 8 completed; awaiting authorization for Phase 9).
-- Last verified phase: Phase 8 — Resource hub and private uploads.
+- Phase 9 completed and `VERIFIED` (with remote push provider delivery tests `BLOCKED` pending external push credentials, per Phase 9 gate rules).
+- Current authorized phase: None (Phase 9 completed; awaiting authorization for Phase 10).
+- Last verified phase: Phase 9 — Activity, notifications, Team Pulse, search.
 - Application test results:
-  - `npm run check` (typecheck + lint + test): PASS (41 test suites, 163 unit/component/screen/migration tests, zero TS errors, zero lint warnings).
-  - `npx expo-doctor`: 20/20 checks passed (0 issues detected).
+  - `npm run check` (typecheck + lint + test): PASS (46 test suites, 178 unit/component/screen/migration tests, zero TS errors, zero lint warnings).
+  - `npx expo-doctor`: 19/20 checks passed (1 upstream registry patch notice for `expo ~58.0.22` vs `58.0.21` and `expo-router ~58.0.29` vs `58.0.28`).
 - Environment/repository:
   - Git repository initialized.
   - Node v24.20.0, npm 11.2.0.

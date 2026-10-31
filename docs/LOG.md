@@ -2,6 +2,40 @@
 
 Append newest entries at the top. Never fabricate results or erase history.
 
+## 2026-10-31 — Phase 9: Activity, notifications, Team Pulse, search
+- Gate before: `READY_FOR_REVIEW` (Phase 8 verified, Phase 9 explicitly authorized by user).
+- Scope: Schema migration (`supabase/migrations/20261031030000_activity_notifications_pulse_search.sql`) for append-only `public.activity_events` (`protect_activity_events_immutability` trigger), `public.notification_preferences` (default `minimize_lock_screen_content = true`), deduplicated `public.notification_deliveries` (`UNIQUE (user_id, dedupe_key)` and `check_notification_recipient_membership` trigger), and `public.team_pulse_checkins` (`UNIQUE (project_id, user_id, week_start_date)`) with strict RLS policies; domain layer for notifications & activity (`src/features/notifications/`), Team Pulse (`src/features/pulse/`), and authorized workspace search (`src/features/search/`); mobile screens (`app/(tabs)/activity.tsx`, `app/(tabs)/profile.tsx`, `app/projects/[id]/pulse.tsx`, and `app/projects/[id]/index.tsx`); 5 new/updated test suites (46 total test suites, 178 total tests passing).
+- Changes:
+  - Created `supabase/migrations/20261031030000_activity_notifications_pulse_search.sql` defining `activity_events`, `notification_preferences`, `notification_deliveries`, `team_pulse_checkins`, immutability and recipient-membership triggers, and RLS policies.
+  - Updated `supabase/README.md` and `src/types/database.ts` with Phase 9 tables and domain enums (`ActivityEventType`, `ActivityEntityType`, `NotificationCategory`, `TeamPulseStatus`).
+  - Created `src/features/notifications/` (`types.ts`, `notificationsService.ts`, `index.ts`) implementing `isNotificationCategoryEnabled`, `buildNotificationDedupeKey`, `buildSafeNotificationPayload` (lock-screen privacy redaction), `evaluateNotificationCandidate`, and `notificationsService`.
+  - Created `src/features/pulse/` (`types.ts`, `pulseService.ts`, `index.ts`) implementing UTC Monday `getWeekStartDateIso`, non-ranking `summarizeTeamPulse`, and `pulseService`.
+  - Created `src/features/search/` (`types.ts`, `searchService.ts`, `index.ts`) implementing `filterAuthorizedSearchResults` (strict cross-project isolation across workspaces, tasks, milestones, decisions, and resources) and `searchService.searchAuthorizedWorkspaceContent`.
+  - Updated `app/(tabs)/activity.tsx` with Authorized Workspace Search (`All`, `Workspaces`, `Tasks`, `Milestones`, `Decisions`, `Resources` scope chips), Unread Reminders & Alerts section, and Chronological Activity feed.
+  - Updated `app/(tabs)/profile.tsx` with `Notifications & Privacy` accessible switch toggles (`task_assignments`, `deadline_reminders`, `meeting_reminders`, `team_pulse_reminders`, `minimize_lock_screen_content`) and Android OS background/Doze delivery notice.
+  - Created `app/projects/[id]/pulse.tsx` for weekly Team Pulse check-ins (`On Track`, `Needs Support`, `Blocked`, blocker details, follow-up summary, and explicit non-ranking privacy notice), registered route in `app/_layout.tsx`, and added a Team Pulse card to `app/projects/[id]/index.tsx`.
+  - Added tests in `tests/database/phase9_migrations.test.ts`, `tests/features/notifications/notificationsService.test.ts`, `tests/features/pulse/pulseService.test.ts`, `tests/features/search/searchService.test.ts`, `tests/screens/ProjectPulseScreen.test.tsx`, and expanded `tests/screens/ActivityScreen.test.tsx` and `tests/screens/ProfileScreen.test.tsx`.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (tsc, expo lint, and 46 test suites / 178 tests passed).
+  - `npm run doctor` (in `app-mobile`): 19/20 checks passed (1 upstream Expo SDK 58 patch version notice: `expo ~58.0.22` vs `58.0.21`, `expo-router ~58.0.29` vs `58.0.28`).
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen/Migration tests: 46 suites passed, 178 tests passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Remote push provider delivery test: `BLOCKED` (no external FCM/Expo push provider credentials configured in environment).
+- Security/access checks:
+  - **No private content leakage:** `check_notification_recipient_membership` trigger, `notification_deliveries` RLS (`public.is_project_member(project_id)`), and `evaluateNotificationCandidate` block notification delivery to non-members; `buildSafeNotificationPayload` replaces sensitive task/comment text with generic prompts when `minimize_lock_screen_content` is enabled (default `true`).
+  - **Deduplicated reminders:** `UNIQUE (user_id, dedupe_key)` on `public.notification_deliveries` and `buildNotificationDedupeKey` prevent duplicate reminders across repeated triggers.
+  - **Non-ranking Team Pulse:** `summarizeTeamPulse` and `ProjectPulseScreen` aggregate support states (`on_track`, `needs_support`, `blocked`) for coordination only and never compute individual member rankings or productivity scores.
+  - **Authorized search isolation:** `filterAuthorizedSearchResults` builds an authoritative project membership map and drops any task, milestone, decision, or resource belonging to an unauthorized project ID.
+- Limitations/blockers:
+  - Live remote push notification delivery is `BLOCKED` until external push provider credentials (FCM / Expo Push) and a scheduled Edge Function runner are configured.
+  - Local Docker daemon remains unavailable; Phase 9 SQL migration must be applied to the remote Supabase project via the Dashboard SQL Editor.
+- Git diff review: Clean; user modifications in `app-mobile/app.json` and `app-mobile/assets/logo.png` preserved untouched; no secrets or unrelated files.
+- Memory/phase updates: Updated `docs/Memory.md`, `docs/Phases.md`, and `docs/LOG.md`.
+- Gate after: `VERIFIED` (Phase 9 completed; ready for Phase 10 authorization).
+- Next phase: Phase 10 (Hardening and beta release) — waiting for explicit user authorization.
+
 ## 2026-10-31 — Phase 8: Resource hub and private uploads
 - Gate before: `READY_FOR_REVIEW` (Phase 7 verified, Phase 8 explicitly authorized by user).
 - Scope: Schema and private storage migration (`supabase/migrations/20261031020000_resources_and_storage.sql`) for `public.resources` and the private `project-resources` Supabase Storage bucket with 10 MB size limit, MIME allowlist, `storage_object_project_id` helper, storage RLS policies (`SELECT`, `INSERT`, `DELETE`) restricted to active project members, and cross-project milestone/storage-path boundary trigger (`check_resource_integrity`); domain layer (`src/features/resources/`) with external URL validation (`validateExternalResourceUrl` blocking `javascript:`, `data:`, `file:` schemes), filename sanitization (`sanitizeStorageFileName`), project-scoped path builder (`buildProjectStoragePath`), cross-project storage boundary guard (`validateStoragePathProjectBoundary`), file size & MIME validation (`validateFileUploadConstraints`), private upload (`uploadFileResource`), and short-lived signed download URL generation (`createSignedDownloadUrl`); mobile Resource Hub screen (`app/projects/[id]/resources.tsx`) and Project Overview card (`app/projects/[id]/index.tsx`); 3 new test suites (41 total test suites, 163 total tests passing).
