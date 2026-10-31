@@ -283,7 +283,8 @@ BEGIN
         project_id, user_id, role
     ) VALUES (
         v_project_id, v_user_id, 'owner'
-    );
+    )
+    ON CONFLICT (project_id, user_id) DO NOTHING;
 
     RETURN v_project_id;
 END;

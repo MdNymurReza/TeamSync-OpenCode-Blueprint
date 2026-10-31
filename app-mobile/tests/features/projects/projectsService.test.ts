@@ -52,6 +52,48 @@ describe('projectsService', () => {
       expect(res.data).toBe('new-proj-id');
       expect(res.error).toBeNull();
     });
+
+    it('gracefully recovers via direct insert if RPC throws unique_project_member constraint error', async () => {
+      (supabase.rpc as jest.Mock).mockResolvedValueOnce({
+        data: null,
+        error: { message: 'duplicate key value violates unique constraint "unique_project_member"' },
+      });
+
+      const mockSingle = jest.fn().mockResolvedValue({
+        data: { id: 'fallback-proj-id' },
+        error: null,
+      });
+      const mockSelect = jest.fn().mockReturnValue({ single: mockSingle });
+      const mockInsert = jest.fn().mockReturnValue({ select: mockSelect });
+      const mockUpsert = jest.fn().mockResolvedValue({ error: null });
+
+      (supabase.from as jest.Mock).mockImplementation((table: string) => {
+        if (table === 'projects') {
+          return { insert: mockInsert };
+        }
+        if (table === 'project_members') {
+          return { upsert: mockUpsert };
+        }
+        return {};
+      });
+
+      const res = await projectsService.createProject({
+        name: 'Autonomous Drone Team',
+        project_type: 'software_project',
+      });
+
+      expect(res.data).toBe('fallback-proj-id');
+      expect(res.error).toBeNull();
+      expect(mockInsert).toHaveBeenCalled();
+      expect(mockUpsert).toHaveBeenCalledWith(
+        {
+          project_id: 'fallback-proj-id',
+          user_id: 'test-user-id',
+          role: 'owner',
+        },
+        { onConflict: 'project_id,user_id' }
+      );
+    });
   });
 
   describe('redeemInvitation', () => {

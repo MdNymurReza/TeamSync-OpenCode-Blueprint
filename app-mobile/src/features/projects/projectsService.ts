@@ -291,6 +291,66 @@ export const projectsService = {
         p_target_date: input.target_date ?? null,
       });
 
+      if (!error && projectId) {
+        return { data: projectId, error: null };
+      }
+
+      // If RPC fails with unique_project_member constraint error (caused by simultaneous trigger
+      // in unmigrated remote databases), fall back to direct project insert, which triggers
+      // on_project_created_add_owner safely.
+      if (
+        error &&
+        (error.message?.includes('unique_project_member') ||
+          error.message?.includes('unique project member') ||
+          error.code === '23505')
+      ) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: directProject, error: directError } = await supabase
+            .from('projects')
+            .insert({
+              name: input.name.trim(),
+              description: input.description ?? null,
+              project_type: input.project_type,
+              course_code: input.course_code ?? null,
+              semester: input.semester ?? null,
+              target_date: input.target_date ?? null,
+              created_by: user.id,
+            })
+            .select('id')
+            .single();
+
+          if (!directError && directProject?.id) {
+            // Ensure owner role is registered (trigger adds it with ON CONFLICT DO NOTHING)
+            await supabase
+              .from('project_members')
+              .upsert(
+                {
+                  project_id: directProject.id,
+                  user_id: user.id,
+                  role: 'owner',
+                },
+                { onConflict: 'project_id,user_id' }
+              );
+
+            // Attempt to seed starter phases if available
+            try {
+              await supabase.rpc('seed_project_phases', {
+                p_project_id: directProject.id,
+                p_project_type: input.project_type,
+              });
+            } catch {
+              // Non-blocking
+            }
+
+            return { data: directProject.id, error: null };
+          }
+        }
+      }
+
       if (error) {
         return { data: null, error };
       }

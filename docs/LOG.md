@@ -2,6 +2,15 @@
 
 Append newest entries at the top. Never fabricate results or erase history.
 
+## 2026-10-31 — Fix `unique_project_member` Constraint Conflict on Project Creation
+- Root Cause: In `create_project_with_owner`, an `INSERT INTO public.projects` fired the `AFTER INSERT` trigger `on_project_created_add_owner`, which immediately inserted `(project_id, user_id, 'owner')` into `public.project_members`. The subsequent statement in `create_project_with_owner` attempted a second insert into `public.project_members` without `ON CONFLICT DO NOTHING`, raising `duplicate key value violates unique constraint "unique_project_member"`.
+- Changes:
+  - Updated `supabase/migrations/20261030010000_projects_and_members.sql` and `supabase/migrations/20261030020000_playbooks_and_phases.sql` so `create_project_with_owner` includes `ON CONFLICT (project_id, user_id) DO NOTHING`.
+  - Added resilient fallback in `app-mobile/src/features/projects/projectsService.ts` (`createProject`): if the remote RPC throws `unique_project_member` due to an unmigrated database function, it immediately recovers by directly inserting into `projects` (which fires `on_project_created_add_owner` safely), upserting the owner role, seeding playbook phases, and returning the created project ID without showing an error to the user.
+  - Added test in `tests/features/projects/projectsService.test.ts` verifying the graceful fallback when `unique_project_member` is returned by the RPC.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (`tsc --noEmit`, `expo lint`, and `jest --ci` — 46/46 test suites, 181/181 tests passed with 0 errors and 0 warnings).
+
 ## 2026-10-31 — App Icon (`assets/logo.png`), Animated Splash Screen, Dynamic UI Motion, Home Dashboard Charts, Full Project Report, Teammate Circle Chart, and Professional Profile Studio
 - Scope: Configure `assets/logo.png` as the unified app icon, Android adaptive icon foreground, native splash image, and web favicon in `app-mobile/app.json`; create `AnimatedSplashOverlay` with spring-scaled logo reveal, breathing halo ring, ambient orbs, and progress sweep; add dynamic micro-interactions across `Button`, `Card`, `ProgressBar`, `LoadingView`, `TabScreen`, `ScreenHeader`, `(tabs)/_layout`, `(auth)/sign-in`, `(tabs)/index`, `(tabs)/projects`, and `projects/[id]/index`; add `StackedStatusChart`, `TeammateCircleChart`, 4-column KPI metric strip, per-workspace completion progress bars, milestone progress bars, and an interactive **Full Project Report** modal (`testID="full-project-report-modal"`) on the Home Dashboard; upgrade `app/(tabs)/profile.tsx` with a full Student Profile Dossier, Profile Picture Upload Studio (`avatar-upload-modal`), and Editable Profile Details (`edit-profile-modal`).
 - Changes:

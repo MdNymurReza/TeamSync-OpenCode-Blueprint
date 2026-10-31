@@ -225,7 +225,8 @@ BEGIN
         project_id, user_id, role
     ) VALUES (
         v_project_id, v_user_id, 'owner'
-    );
+    )
+    ON CONFLICT (project_id, user_id) DO NOTHING;
 
     -- Automatically seed default playbook phases based on project_type
     PERFORM public.seed_project_phases(v_project_id, p_project_type);
