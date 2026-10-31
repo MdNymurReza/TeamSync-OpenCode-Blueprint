@@ -33,3 +33,9 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
+
+// Safe-area insets: use the library's official Jest mock (zero insets, no provider required).
+jest.mock('react-native-safe-area-context', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('react-native-safe-area-context/jest/mock').default
+);

@@ -1,17 +1,27 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Badge, Button, Card, ErrorView, LoadingView } from '@/components/ui';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  ErrorView,
+  IconTile,
+  LoadingView,
+  ProgressBar,
+  SectionHeader,
+} from '@/components/ui';
 import {
   projectsService,
   ProjectWithRole,
@@ -20,8 +30,20 @@ import {
 } from '@/features/projects';
 import { playbooksService, ProjectPhase } from '@/features/playbooks';
 import { tasksService, TaskWithDetails } from '@/features/tasks';
+import { milestonesService, MilestoneWithDetails } from '@/features/milestones';
+import {
+  formatMeetingDateTime,
+  meetingsService,
+  MeetingWithDetails,
+} from '@/features/meetings';
+import { decisionsService, DecisionWithDetails } from '@/features/decisions';
+import {
+  formatFileSize,
+  resourcesService,
+  ResourceWithDetails,
+} from '@/features/resources';
 import { ProjectInvitation } from '@/types/database';
-import { colors, radii, spacing, typography } from '@/theme';
+import { colors, radii, spacing, touchTargets, typography } from '@/theme';
 
 export default function ProjectDetailsScreen() {
   const router = useRouter();
@@ -31,6 +53,10 @@ export default function ProjectDetailsScreen() {
   const [members, setMembers] = useState<ProjectMemberWithProfile[]>([]);
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
   const [tasks, setTasks] = useState<TaskWithDetails[]>([]);
+  const [milestones, setMilestones] = useState<MilestoneWithDetails[]>([]);
+  const [meetings, setMeetings] = useState<MeetingWithDetails[]>([]);
+  const [decisions, setDecisions] = useState<DecisionWithDetails[]>([]);
+  const [resources, setResources] = useState<ResourceWithDetails[]>([]);
   const [activeInvitation, setActiveInvitation] = useState<ProjectInvitation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -41,12 +67,34 @@ export default function ProjectDetailsScreen() {
     if (!id) return;
     setErrorMessage(null);
 
-    const [projRes, membersRes, invitesRes, phasesRes, tasksRes] = await Promise.all([
+    const [
+      projRes,
+      membersRes,
+      invitesRes,
+      phasesRes,
+      tasksRes,
+      milestonesRes,
+      meetingsRes,
+      decisionsRes,
+      resourcesRes,
+    ] = await Promise.all([
       projectsService.fetchProjectDetails(id),
       projectsService.fetchProjectMembers(id),
       projectsService.fetchProjectInvitations(id),
       playbooksService.getProjectPhases(id),
       tasksService.fetchProjectTasks(id),
+      milestonesService?.fetchProjectMilestones
+        ? milestonesService.fetchProjectMilestones(id)
+        : Promise.resolve({ data: [] as MilestoneWithDetails[], error: null }),
+      meetingsService?.fetchProjectMeetings
+        ? meetingsService.fetchProjectMeetings(id)
+        : Promise.resolve({ data: [] as MeetingWithDetails[], error: null }),
+      decisionsService?.fetchProjectDecisions
+        ? decisionsService.fetchProjectDecisions(id)
+        : Promise.resolve({ data: [] as DecisionWithDetails[], error: null }),
+      resourcesService?.fetchProjectResources
+        ? resourcesService.fetchProjectResources(id)
+        : Promise.resolve({ data: [] as ResourceWithDetails[], error: null }),
     ]);
 
     if (projRes.error) {
@@ -73,6 +121,22 @@ export default function ProjectDetailsScreen() {
       setTasks(tasksRes.data);
     }
 
+    if (milestonesRes.data) {
+      setMilestones(milestonesRes.data);
+    }
+
+    if (meetingsRes.data) {
+      setMeetings(meetingsRes.data);
+    }
+
+    if (decisionsRes.data) {
+      setDecisions(decisionsRes.data);
+    }
+
+    if (resourcesRes.data) {
+      setResources(resourcesRes.data);
+    }
+
     setIsLoading(false);
   }, [id]);
 
@@ -80,12 +144,34 @@ export default function ProjectDetailsScreen() {
     let isMounted = true;
     (async () => {
       if (!id) return;
-      const [projRes, membersRes, invitesRes, phasesRes, tasksRes] = await Promise.all([
+      const [
+        projRes,
+        membersRes,
+        invitesRes,
+        phasesRes,
+        tasksRes,
+        milestonesRes,
+        meetingsRes,
+        decisionsRes,
+        resourcesRes,
+      ] = await Promise.all([
         projectsService.fetchProjectDetails(id),
         projectsService.fetchProjectMembers(id),
         projectsService.fetchProjectInvitations(id),
         playbooksService.getProjectPhases(id),
         tasksService.fetchProjectTasks(id),
+        milestonesService?.fetchProjectMilestones
+          ? milestonesService.fetchProjectMilestones(id)
+          : Promise.resolve({ data: [] as MilestoneWithDetails[], error: null }),
+        meetingsService?.fetchProjectMeetings
+          ? meetingsService.fetchProjectMeetings(id)
+          : Promise.resolve({ data: [] as MeetingWithDetails[], error: null }),
+        decisionsService?.fetchProjectDecisions
+          ? decisionsService.fetchProjectDecisions(id)
+          : Promise.resolve({ data: [] as DecisionWithDetails[], error: null }),
+        resourcesService?.fetchProjectResources
+          ? resourcesService.fetchProjectResources(id)
+          : Promise.resolve({ data: [] as ResourceWithDetails[], error: null }),
       ]);
       if (!isMounted) return;
 
@@ -107,6 +193,18 @@ export default function ProjectDetailsScreen() {
       }
       if (tasksRes.data) {
         setTasks(tasksRes.data);
+      }
+      if (milestonesRes.data) {
+        setMilestones(milestonesRes.data);
+      }
+      if (meetingsRes.data) {
+        setMeetings(meetingsRes.data);
+      }
+      if (decisionsRes.data) {
+        setDecisions(decisionsRes.data);
+      }
+      if (resourcesRes.data) {
+        setResources(resourcesRes.data);
       }
       setIsLoading(false);
     })();
@@ -190,6 +288,15 @@ export default function ProjectDetailsScreen() {
   const isOwnerOrAdmin =
     project.currentUserRole === 'owner' || project.currentUserRole === 'admin';
   const typeOpt = PROJECT_TYPE_OPTIONS.find((t) => t.type === project.project_type);
+  const completedPhasesCount = phases.filter((p) => p.is_completed).length;
+  const completedTasksCount = tasks.filter((t) => t.status === 'done').length;
+  const overdueTasksCount = tasks.filter(
+    (t) => t.due_date && t.due_date < new Date().toISOString() && t.status !== 'done'
+  ).length;
+  const completedMilestonesCount = milestones.filter(
+    (m) => m.effectiveStatus === 'completed'
+  ).length;
+  const overdueMilestonesCount = milestones.filter((m) => m.isOverdue).length;
 
   return (
     <ScrollView
@@ -205,8 +312,8 @@ export default function ProjectDetailsScreen() {
         />
       }
     >
-      {/* Workspace Header Card */}
-      <Card style={styles.headerCard}>
+      {/* Workspace Hero Card */}
+      <Card style={styles.headerCard} variant="elevated">
         <View style={styles.headerTop}>
           <Badge
             label={typeOpt?.label ?? project.project_type}
@@ -230,43 +337,48 @@ export default function ProjectDetailsScreen() {
           <Text style={styles.projectDesc}>{project.description}</Text>
         ) : null}
 
-        <View style={styles.metaRow}>
-          {project.course_code ? (
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Course</Text>
-              <Text style={styles.metaValue}>{project.course_code}</Text>
-            </View>
-          ) : null}
-          {project.semester ? (
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Semester</Text>
-              <Text style={styles.metaValue}>{project.semester}</Text>
-            </View>
-          ) : null}
-          {project.target_date ? (
-            <View style={styles.metaItem}>
-              <Text style={styles.metaLabel}>Target Deadline</Text>
-              <Text style={styles.metaValue}>
-                {new Date(project.target_date).toLocaleDateString()}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+        {(project.course_code || project.semester || project.target_date) ? (
+          <View style={styles.metaRow}>
+            {project.course_code ? (
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Course</Text>
+                <Text style={styles.metaValue}>{project.course_code}</Text>
+              </View>
+            ) : null}
+            {project.semester ? (
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Semester</Text>
+                <Text style={styles.metaValue}>{project.semester}</Text>
+              </View>
+            ) : null}
+            {project.target_date ? (
+              <View style={styles.metaItem}>
+                <Text style={styles.metaLabel}>Target Deadline</Text>
+                <Text style={styles.metaValue}>
+                  {new Date(project.target_date).toLocaleDateString()}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </Card>
 
       {/* Invitation Card */}
       {isOwnerOrAdmin ? (
         <Card style={styles.inviteCard}>
           <View style={styles.inviteHeader}>
-            <View>
-              <Text style={styles.cardSectionTitle}>Team Invitation</Text>
-              <Text style={styles.cardSectionSubtitle}>
-                Invite teammates with an expiring join code
-              </Text>
+            <View style={styles.inviteHeaderLeft}>
+              <IconTile name="key-outline" tone="primary" size={38} />
+              <View style={styles.inviteHeaderTextCol}>
+                <Text style={styles.cardSectionTitle}>Team Invitation</Text>
+                <Text style={styles.cardSectionSubtitle}>
+                  Invite teammates with an expiring join code
+                </Text>
+              </View>
             </View>
             <Button
               title={activeInvitation ? 'New Code' : 'Generate'}
-              variant="outline"
+              variant="soft"
               size="sm"
               loading={isGeneratingInvite}
               onPress={handleGenerateInvite}
@@ -293,52 +405,65 @@ export default function ProjectDetailsScreen() {
 
       {/* Workflow Phases Section */}
       <Card style={styles.phasesCard}>
-        <View style={styles.phasesHeader}>
-          <View>
-            <Text style={styles.cardSectionTitle}>Workflow Phases ({phases.length})</Text>
-            <Text style={styles.cardSectionSubtitle}>
-              {phases.filter((p) => p.is_completed).length} of {phases.length} completed
-            </Text>
-          </View>
-          <Button
-            title="Manage"
-            variant="text"
-            size="sm"
-            onPress={() => router.push(`/projects/${project.id}/phases` as Href)}
-          />
-        </View>
+        <SectionHeader
+          title={`Workflow Phases (${phases.length})`}
+          action={
+            <Button
+              title="Manage"
+              variant="text"
+              size="sm"
+              onPress={() => router.push(`/projects/${project.id}/phases` as Href)}
+            />
+          }
+          style={styles.cardHeaderRow}
+        />
+
+        <Text style={styles.cardSectionSubtitle}>
+          {completedPhasesCount} of {phases.length} completed
+        </Text>
 
         {phases.length > 0 ? (
-          <View style={styles.phasePreviewList}>
-            {phases.slice(0, 4).map((phase, i) => (
-              <View key={phase.id} style={styles.phasePreviewRow}>
+          <>
+            <ProgressBar
+              value={completedPhasesCount}
+              total={phases.length}
+              label="Workflow phases progress"
+              tone={completedPhasesCount === phases.length ? 'success' : 'primary'}
+            />
+            <View style={styles.phasePreviewList}>
+              {phases.slice(0, 4).map((phase, i) => (
                 <View
-                  style={[
-                    styles.phaseStatusDot,
-                    phase.is_completed ? styles.phaseStatusDotDone : null,
-                  ]}
+                  key={phase.id}
+                  style={[styles.phasePreviewRow, i > 0 && styles.rowBorder]}
                 >
-                  {phase.is_completed ? (
-                    <Ionicons name="checkmark" size={10} color={colors.surface} />
-                  ) : (
-                    <Text style={styles.phaseNumberText}>{i + 1}</Text>
-                  )}
+                  <View
+                    style={[
+                      styles.phaseStatusDot,
+                      phase.is_completed ? styles.phaseStatusDotDone : null,
+                    ]}
+                  >
+                    {phase.is_completed ? (
+                      <Ionicons name="checkmark" size={12} color={colors.surface} />
+                    ) : (
+                      <Text style={styles.phaseNumberText}>{i + 1}</Text>
+                    )}
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.phasePreviewTitle,
+                      phase.is_completed ? styles.phasePreviewTitleDone : null,
+                    ]}
+                  >
+                    {phase.name}
+                  </Text>
                 </View>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.phasePreviewTitle,
-                    phase.is_completed ? styles.phasePreviewTitleDone : null,
-                  ]}
-                >
-                  {phase.name}
-                </Text>
-              </View>
-            ))}
-            {phases.length > 4 ? (
-              <Text style={styles.morePhasesText}>+ {phases.length - 4} more phases</Text>
-            ) : null}
-          </View>
+              ))}
+              {phases.length > 4 ? (
+                <Text style={styles.morePhasesText}>+ {phases.length - 4} more phases</Text>
+              ) : null}
+            </View>
+          </>
         ) : (
           <Text style={styles.noPhasesText}>
             No phases configured. Tap Manage to set up playbook phases.
@@ -346,65 +471,173 @@ export default function ProjectDetailsScreen() {
         )}
       </Card>
 
-      {/* Tasks Overview Section */}
+      {/* Milestones & Timeline Section */}
       <Card style={styles.phasesCard}>
-        <View style={styles.phasesHeader}>
-          <View>
-            <Text style={styles.cardSectionTitle}>Tasks & Deliverables ({tasks.length})</Text>
-            <Text style={styles.cardSectionSubtitle}>
-              {tasks.filter((t) => t.status === 'done').length} of {tasks.length} completed
-              {tasks.filter((t) => t.due_date && t.due_date < new Date().toISOString() && t.status !== 'done').length > 0 ? (
-                <Text style={styles.overdueNotice}>
-                  {' '}• {tasks.filter((t) => t.due_date && t.due_date < new Date().toISOString() && t.status !== 'done').length} overdue
+        <SectionHeader
+          title={`Milestones & Timeline (${milestones.length})`}
+          action={
+            <Button
+              title="Timeline"
+              variant="text"
+              size="sm"
+              onPress={() => router.push(`/projects/${project.id}/milestones` as Href)}
+            />
+          }
+          style={styles.cardHeaderRow}
+        />
+
+        <Text style={styles.cardSectionSubtitle}>
+          {completedMilestonesCount} of {milestones.length} completed
+          {overdueMilestonesCount > 0 ? (
+            <Text style={styles.overdueNotice}> • {overdueMilestonesCount} overdue</Text>
+          ) : null}
+        </Text>
+
+        {milestones.length > 0 ? (
+          <>
+            <ProgressBar
+              value={completedMilestonesCount}
+              total={milestones.length}
+              label="Milestones completion progress"
+              tone={completedMilestonesCount === milestones.length ? 'success' : 'primary'}
+            />
+            <View style={styles.phasePreviewList}>
+              {milestones.slice(0, 3).map((m, i) => (
+                <Pressable
+                  key={m.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open milestone ${m.title}`}
+                  style={({ pressed }) => [
+                    styles.taskPreviewRow,
+                    i > 0 && styles.rowBorder,
+                    pressed && styles.rowPressed,
+                  ]}
+                  onPress={() => router.push(`/projects/${project.id}/milestones` as Href)}
+                >
+                  <View
+                    style={[
+                      styles.phaseStatusDot,
+                      m.effectiveStatus === 'completed' ? styles.phaseStatusDotDone : null,
+                    ]}
+                  >
+                    {m.effectiveStatus === 'completed' ? (
+                      <Ionicons name="checkmark" size={12} color={colors.surface} />
+                    ) : (
+                      <Ionicons name="flag-outline" size={11} color={colors.primary} />
+                    )}
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.phasePreviewTitle,
+                      m.effectiveStatus === 'completed' ? styles.phasePreviewTitleDone : null,
+                    ]}
+                  >
+                    {m.title}
+                  </Text>
+                  <Badge
+                    label={`${m.progressPercent}%`}
+                    variant={
+                      m.isOverdue
+                        ? 'danger'
+                        : m.hasDeadlineRisk
+                          ? 'warning'
+                          : m.effectiveStatus === 'completed'
+                            ? 'success'
+                            : 'default'
+                    }
+                    size="sm"
+                  />
+                </Pressable>
+              ))}
+              {milestones.length > 3 ? (
+                <Text style={styles.morePhasesText}>
+                  + {milestones.length - 3} more milestones
                 </Text>
               ) : null}
-            </Text>
-          </View>
-          <Button
-            title="View All"
-            variant="text"
-            size="sm"
-            onPress={() => router.push(`/projects/${project.id}/tasks` as Href)}
-          />
-        </View>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.noPhasesText}>
+            No milestones set yet. Tap Timeline to create project checkpoints.
+          </Text>
+        )}
+      </Card>
+
+      {/* Tasks Overview Section */}
+      <Card style={styles.phasesCard}>
+        <SectionHeader
+          title={`Tasks & Deliverables (${tasks.length})`}
+          action={
+            <Button
+              title="View All"
+              variant="text"
+              size="sm"
+              onPress={() => router.push(`/projects/${project.id}/tasks` as Href)}
+            />
+          }
+          style={styles.cardHeaderRow}
+        />
+
+        <Text style={styles.cardSectionSubtitle}>
+          {completedTasksCount} of {tasks.length} completed
+          {overdueTasksCount > 0 ? (
+            <Text style={styles.overdueNotice}> • {overdueTasksCount} overdue</Text>
+          ) : null}
+        </Text>
 
         {tasks.length > 0 ? (
-          <View style={styles.phasePreviewList}>
-            {tasks.slice(0, 3).map((task) => (
-              <TouchableOpacity
-                key={task.id}
-                style={styles.phasePreviewRow}
-                onPress={() => router.push(`/projects/${project.id}/tasks/${task.id}` as Href)}
-              >
-                <View
-                  style={[
-                    styles.phaseStatusDot,
-                    task.status === 'done' ? styles.phaseStatusDotDone : null,
+          <>
+            <ProgressBar
+              value={completedTasksCount}
+              total={tasks.length}
+              label="Tasks completion progress"
+              tone={completedTasksCount === tasks.length ? 'success' : 'primary'}
+            />
+            <View style={styles.phasePreviewList}>
+              {tasks.slice(0, 3).map((task, i) => (
+                <Pressable
+                  key={task.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open task ${task.title}`}
+                  style={({ pressed }) => [
+                    styles.taskPreviewRow,
+                    i > 0 && styles.rowBorder,
+                    pressed && styles.rowPressed,
                   ]}
+                  onPress={() => router.push(`/projects/${project.id}/tasks/${task.id}` as Href)}
                 >
-                  {task.status === 'done' ? (
-                    <Ionicons name="checkmark" size={10} color={colors.surface} />
-                  ) : null}
-                </View>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.phasePreviewTitle,
-                    task.status === 'done' ? styles.phasePreviewTitleDone : null,
-                  ]}
-                >
-                  {task.title}
-                </Text>
-                <Badge
-                  label={task.priority.toUpperCase()}
-                  variant={task.priority === 'urgent' ? 'warning' : 'default'}
-                />
-              </TouchableOpacity>
-            ))}
-            {tasks.length > 3 ? (
-              <Text style={styles.morePhasesText}>+ {tasks.length - 3} more tasks</Text>
-            ) : null}
-          </View>
+                  <View
+                    style={[
+                      styles.phaseStatusDot,
+                      task.status === 'done' ? styles.phaseStatusDotDone : null,
+                    ]}
+                  >
+                    {task.status === 'done' ? (
+                      <Ionicons name="checkmark" size={12} color={colors.surface} />
+                    ) : null}
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.phasePreviewTitle,
+                      task.status === 'done' ? styles.phasePreviewTitleDone : null,
+                    ]}
+                  >
+                    {task.title}
+                  </Text>
+                  <Badge
+                    label={task.priority.toUpperCase()}
+                    variant={task.priority === 'urgent' ? 'warning' : 'default'}
+                    size="sm"
+                  />
+                </Pressable>
+              ))}
+              {tasks.length > 3 ? (
+                <Text style={styles.morePhasesText}>+ {tasks.length - 3} more tasks</Text>
+              ) : null}
+            </View>
+          </>
         ) : (
           <Text style={styles.noPhasesText}>
             No tasks created yet. Tap View All to create deliverables.
@@ -412,36 +645,206 @@ export default function ProjectDetailsScreen() {
         )}
       </Card>
 
+      {/* Meetings & Minutes Section */}
+      <Card style={styles.phasesCard}>
+        <SectionHeader
+          title={`Meetings & Minutes (${meetings.length})`}
+          action={
+            <Button
+              title="Meetings"
+              variant="text"
+              size="sm"
+              onPress={() => router.push(`/projects/${project.id}/meetings` as Href)}
+            />
+          }
+          style={styles.cardHeaderRow}
+        />
+
+        {meetings.length > 0 ? (
+          <View style={styles.phasePreviewList}>
+            {meetings.slice(0, 2).map((mtg, i) => (
+              <Pressable
+                key={mtg.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Open meeting ${mtg.title}`}
+                style={({ pressed }) => [
+                  styles.taskPreviewRow,
+                  i > 0 && styles.rowBorder,
+                  pressed && styles.rowPressed,
+                ]}
+                onPress={() => router.push(`/projects/${project.id}/meetings` as Href)}
+              >
+                <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                <View style={styles.memberInfo}>
+                  <Text numberOfLines={1} style={styles.phasePreviewTitle}>
+                    {mtg.title}
+                  </Text>
+                  <Text style={styles.memberSub}>
+                    {formatMeetingDateTime(mtg.starts_at)}
+                  </Text>
+                </View>
+                <Badge
+                  label={mtg.status.toUpperCase()}
+                  variant={mtg.status === 'completed' ? 'success' : 'primary'}
+                  size="sm"
+                />
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noPhasesText}>
+            No meetings scheduled yet. Tap Meetings to schedule agendas and record minutes.
+          </Text>
+        )}
+      </Card>
+
+      {/* Decision Log Section */}
+      <Card style={styles.phasesCard}>
+        <SectionHeader
+          title={`Decision Log (${decisions.length})`}
+          action={
+            <Button
+              title="Decisions"
+              variant="text"
+              size="sm"
+              onPress={() => router.push(`/projects/${project.id}/decisions` as Href)}
+            />
+          }
+          style={styles.cardHeaderRow}
+        />
+
+        {decisions.length > 0 ? (
+          <View style={styles.phasePreviewList}>
+            {decisions.slice(0, 2).map((dec, i) => (
+              <Pressable
+                key={dec.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Open decision ${dec.title}`}
+                style={({ pressed }) => [
+                  styles.taskPreviewRow,
+                  i > 0 && styles.rowBorder,
+                  pressed && styles.rowPressed,
+                ]}
+                onPress={() => router.push(`/projects/${project.id}/decisions` as Href)}
+              >
+                <Ionicons
+                  name="git-pull-request-outline"
+                  size={16}
+                  color={colors.primary}
+                />
+                <Text numberOfLines={1} style={styles.phasePreviewTitle}>
+                  {dec.title}
+                </Text>
+                <Badge
+                  label={dec.status.toUpperCase()}
+                  variant={
+                    dec.status === 'accepted'
+                      ? 'success'
+                      : dec.status === 'proposed'
+                        ? 'info'
+                        : 'warning'
+                  }
+                  size="sm"
+                />
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noPhasesText}>
+            No team decisions logged yet. Tap Decisions to record agreements and rationale.
+          </Text>
+        )}
+      </Card>
+
+      {/* Resource Hub Section */}
+      <Card style={styles.phasesCard}>
+        <SectionHeader
+          title={`Resource Hub (${resources.length})`}
+          action={
+            <Button
+              title="Resources"
+              variant="text"
+              size="sm"
+              onPress={() => router.push(`/projects/${project.id}/resources` as Href)}
+            />
+          }
+          style={styles.cardHeaderRow}
+        />
+
+        {resources.length > 0 ? (
+          <View style={styles.phasePreviewList}>
+            {resources.slice(0, 2).map((res, i) => (
+              <Pressable
+                key={res.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Open resource ${res.title}`}
+                style={({ pressed }) => [
+                  styles.taskPreviewRow,
+                  i > 0 && styles.rowBorder,
+                  pressed && styles.rowPressed,
+                ]}
+                onPress={() => router.push(`/projects/${project.id}/resources` as Href)}
+              >
+                <Ionicons
+                  name={
+                    res.resource_type === 'file_upload'
+                      ? 'document-lock-outline'
+                      : 'link-outline'
+                  }
+                  size={16}
+                  color={colors.primary}
+                />
+                <View style={styles.memberInfo}>
+                  <Text numberOfLines={1} style={styles.phasePreviewTitle}>
+                    {res.title}
+                  </Text>
+                  <Text style={styles.memberSub} numberOfLines={1}>
+                    {res.resource_type === 'file_upload'
+                      ? `${res.file_name ?? 'File'} • ${formatFileSize(res.file_size_bytes)}`
+                      : res.external_url}
+                  </Text>
+                </View>
+                <Badge
+                  label={res.category.toUpperCase()}
+                  variant={res.resource_type === 'file_upload' ? 'primary' : 'default'}
+                  size="sm"
+                />
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noPhasesText}>
+            No links or files shared yet. Tap Resources to add Drive/GitHub links or private uploads.
+          </Text>
+        )}
+      </Card>
+
       {/* Members Section */}
       <Card style={styles.membersCard}>
-        <View style={styles.membersHeader}>
-          <Text style={styles.cardSectionTitle}>Team Members ({members.length})</Text>
-          <Button
-            title="Manage"
-            variant="text"
-            size="sm"
-            onPress={() => router.push(`/projects/${project.id}/members` as Href)}
-          />
-        </View>
+        <SectionHeader
+          title={`Team Members (${members.length})`}
+          action={
+            <Button
+              title="Manage"
+              variant="text"
+              size="sm"
+              onPress={() => router.push(`/projects/${project.id}/members` as Href)}
+            />
+          }
+          style={styles.cardHeaderRow}
+        />
 
         <View style={styles.memberList}>
-          {members.map((m) => {
+          {members.map((m, i) => {
             const displayName = m.profile?.full_name ?? 'Team Member';
-            const initials = displayName
-              .split(' ')
-              .map((n) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2);
-
             return (
-              <View key={m.id} style={styles.memberRow}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials}</Text>
-                </View>
+              <View key={m.id} style={[styles.memberRow, i > 0 && styles.rowBorder]}>
+                <Avatar name={displayName} size={40} style={styles.avatarSpacing} />
                 <View style={styles.memberInfo}>
-                  <Text style={styles.memberName}>{displayName}</Text>
-                  <Text style={styles.memberSub}>
+                  <Text style={styles.memberName} numberOfLines={1}>
+                    {displayName}
+                  </Text>
+                  <Text style={styles.memberSub} numberOfLines={1}>
                     {m.profile?.university ?? m.profile?.email ?? 'Student'}
                   </Text>
                 </View>
@@ -450,6 +853,7 @@ export default function ProjectDetailsScreen() {
                   variant={
                     m.role === 'owner' ? 'primary' : m.role === 'admin' ? 'info' : 'default'
                   }
+                  size="sm"
                 />
               </View>
             );
@@ -468,7 +872,7 @@ export default function ProjectDetailsScreen() {
               <Ionicons
                 name={project.is_archived ? 'refresh-outline' : 'archive-outline'}
                 size={18}
-                color={colors.textPrimary}
+                color={project.is_archived ? colors.textPrimary : colors.primary}
               />
             }
             onPress={handleArchiveToggle}
@@ -499,6 +903,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
     marginBottom: spacing.sm,
   },
   badgeRow: {
@@ -520,7 +926,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.divider,
     flexWrap: 'wrap',
   },
   metaItem: {
@@ -532,8 +938,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   metaValue: {
-    ...typography.bodyMedium,
-    fontWeight: '600',
+    ...typography.label,
     color: colors.textPrimary,
   },
   inviteCard: {
@@ -544,6 +949,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
+  },
+  inviteHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  inviteHeaderTextCol: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  cardHeaderRow: {
+    marginBottom: 0,
   },
   cardSectionTitle: {
     ...typography.titleSmall,
@@ -558,20 +976,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   codeBox: {
-    backgroundColor: colors.surfaceSubtle,
-    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
+    borderColor: colors.primaryBorder,
     marginBottom: spacing.xs,
   },
   codeText: {
     ...typography.titleLarge,
     letterSpacing: 4,
     color: colors.primary,
-    fontWeight: '700',
   },
   inviteExpiryText: {
     ...typography.caption,
@@ -580,36 +996,44 @@ const styles = StyleSheet.create({
   noInviteText: {
     ...typography.caption,
     color: colors.textMuted,
-    fontStyle: 'italic',
     marginTop: spacing.xs,
   },
   phasesCard: {
     padding: spacing.base,
     gap: spacing.sm,
   },
-  phasesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   phasePreviewList: {
-    gap: spacing.xs,
     marginTop: spacing.xs,
   },
   phasePreviewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  taskPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: touchTargets.minTouchSize,
+    paddingVertical: spacing.sm,
+  },
+  rowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+  rowPressed: {
+    backgroundColor: colors.surfaceSubtle,
   },
   phaseStatusDot: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     borderRadius: radii.full,
-    backgroundColor: colors.surfaceHover,
+    backgroundColor: colors.surfaceSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: colors.borderMuted,
   },
   phaseStatusDotDone: {
     backgroundColor: colors.success,
@@ -634,12 +1058,11 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.primary,
     fontWeight: '600',
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   noPhasesText: {
     ...typography.caption,
     color: colors.textMuted,
-    fontStyle: 'italic',
     marginTop: spacing.xs,
   },
   overdueNotice: {
@@ -649,46 +1072,28 @@ const styles = StyleSheet.create({
   membersCard: {
     padding: spacing.base,
   },
-  membersHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
   memberList: {
-    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
   },
-  avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.sm,
-  },
-  avatarText: {
-    ...typography.bodyMedium,
-    color: colors.primary,
-    fontWeight: '700',
+  avatarSpacing: {
+    marginRight: spacing.md,
   },
   memberInfo: {
     flex: 1,
+    marginRight: spacing.sm,
   },
   memberName: {
-    ...typography.bodyMedium,
-    fontWeight: '600',
+    ...typography.label,
     color: colors.textPrimary,
   },
   memberSub: {
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 11,
   },
   bottomActions: {
     marginTop: spacing.xs,

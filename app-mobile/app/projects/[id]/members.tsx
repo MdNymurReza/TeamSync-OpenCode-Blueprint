@@ -10,7 +10,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Badge, Button, Card, ErrorView, LoadingView } from '@/components/ui';
+import { Avatar, Badge, Button, Card, ErrorView, LoadingView } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import {
   projectsService,
@@ -201,38 +201,36 @@ export default function ProjectMembersScreen() {
       }
     >
       <View style={styles.header}>
+        <Text style={styles.eyebrow}>{project.name}</Text>
         <Text style={styles.title} accessibilityRole="header">
           Workspace Team
         </Text>
         <Text style={styles.subtitle}>
-          {project.name} • {members.length} {members.length === 1 ? 'member' : 'members'}
+          {members.length} {members.length === 1 ? 'member' : 'members'} in this workspace
         </Text>
       </View>
 
       <Card style={styles.card}>
         <View style={styles.list}>
-          {members.map((m) => {
+          {members.map((m, i) => {
             const displayName = m.profile?.full_name ?? 'Team Member';
-            const initials = displayName
-              .split(' ')
-              .map((n) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2);
             const isCurrentUser = m.user_id === user?.id;
 
             return (
-              <View key={m.id} style={styles.memberRow}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>{initials}</Text>
-                </View>
+              <View
+                key={m.id}
+                style={[styles.memberRow, i > 0 && styles.memberRowBorder]}
+              >
+                <Avatar name={displayName} size={44} style={styles.avatarSpacing} />
 
                 <View style={styles.memberInfo}>
                   <View style={styles.nameRow}>
-                    <Text style={styles.memberName}>{displayName}</Text>
+                    <Text style={styles.memberName} numberOfLines={1}>
+                      {displayName}
+                    </Text>
                     {isCurrentUser ? <Text style={styles.youBadge}>(You)</Text> : null}
                   </View>
-                  <Text style={styles.memberSub}>
+                  <Text style={styles.memberSub} numberOfLines={1}>
                     {m.profile?.university ?? m.profile?.email ?? 'Student'}
                   </Text>
                   <Text style={styles.memberDate}>
@@ -246,6 +244,7 @@ export default function ProjectMembersScreen() {
                     variant={
                       m.role === 'owner' ? 'primary' : m.role === 'admin' ? 'info' : 'default'
                     }
+                    size="sm"
                   />
 
                   {isOwnerOrAdmin && !isCurrentUser && m.role !== 'owner' ? (
@@ -303,6 +302,11 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.xs,
   },
+  eyebrow: {
+    ...typography.overline,
+    color: colors.primary,
+    marginBottom: spacing.xxs,
+  },
   title: {
     ...typography.titleLarge,
     color: colors.textPrimary,
@@ -313,45 +317,37 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   card: {
-    padding: spacing.base,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.xs,
   },
   list: {
-    gap: spacing.md,
+    flexDirection: 'column',
   },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingBottom: spacing.sm,
+    paddingVertical: spacing.md,
   },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.sm,
+  memberRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
-  avatarText: {
-    ...typography.bodyMedium,
-    color: colors.primary,
-    fontWeight: '700',
+  avatarSpacing: {
+    marginRight: spacing.md,
   },
   memberInfo: {
     flex: 1,
+    marginRight: spacing.sm,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   memberName: {
-    ...typography.bodyMedium,
-    fontWeight: '600',
+    ...typography.label,
     color: colors.textPrimary,
+    flexShrink: 1,
   },
   youBadge: {
     ...typography.caption,
@@ -360,13 +356,13 @@ const styles = StyleSheet.create({
   },
   memberSub: {
     ...typography.caption,
-    color: colors.textMuted,
-    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   memberDate: {
     ...typography.caption,
     color: colors.textMuted,
-    fontSize: 10,
+    fontSize: 11,
     marginTop: 2,
   },
   rightCol: {

@@ -7,7 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { colors, spacing, typography } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 import { Button } from './Button';
 
 export interface EmptyStateProps {
@@ -54,9 +54,14 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xl,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
   },
   iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: radii.full,
+    backgroundColor: colors.primaryLight,
     marginBottom: spacing.base,
     alignItems: 'center',
     justifyContent: 'center',
@@ -71,7 +76,7 @@ const styles = StyleSheet.create({
     ...typography.bodyMedium,
     color: colors.textSecondary,
     textAlign: 'center',
-    maxWidth: 320,
+    maxWidth: 300,
     marginBottom: spacing.base,
   },
   actionContainer: {

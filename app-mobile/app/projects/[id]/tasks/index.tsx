@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Badge, Button, Card, EmptyState, ErrorView, LoadingView } from '@/components/ui';
+import { Avatar, Badge, Button, Card, EmptyState, ErrorView, LoadingView } from '@/components/ui';
 import { playbooksService, ProjectPhase } from '@/features/playbooks';
 import { projectsService, ProjectWithRole } from '@/features/projects';
 import {
@@ -164,7 +164,9 @@ export default function ProjectTasksScreen() {
       {/* Top Header & New Task Button */}
       <View style={styles.topBar}>
         <View style={styles.topBarTitleContainer}>
-          <Text style={styles.projectSubtitle}>{project.name}</Text>
+          <Text style={styles.projectSubtitle} numberOfLines={1}>
+            {project.name}
+          </Text>
           <Text style={styles.screenTitle} accessibilityRole="header">
             Tasks & Work
           </Text>
@@ -197,8 +199,9 @@ export default function ProjectTasksScreen() {
           ).map((tab) => {
             const isActive = activeTab === tab.key;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={tab.key}
+                hitSlop={6}
                 style={[styles.filterChip, isActive ? styles.filterChipActive : null]}
                 onPress={() => setActiveTab(tab.key)}
                 accessibilityRole="button"
@@ -212,7 +215,7 @@ export default function ProjectTasksScreen() {
                 >
                   {tab.label}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </ScrollView>
@@ -226,7 +229,8 @@ export default function ProjectTasksScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.phaseFilterContent}
           >
-            <TouchableOpacity
+            <Pressable
+              hitSlop={6}
               style={[
                 styles.phaseFilterChip,
                 selectedPhaseId === null ? styles.phaseFilterChipActive : null,
@@ -241,13 +245,14 @@ export default function ProjectTasksScreen() {
               >
                 All Phases
               </Text>
-            </TouchableOpacity>
+            </Pressable>
 
             {phases.map((phase) => {
               const isSelected = selectedPhaseId === phase.id;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={phase.id}
+                  hitSlop={6}
                   style={[
                     styles.phaseFilterChip,
                     isSelected ? styles.phaseFilterChipActive : null,
@@ -262,7 +267,7 @@ export default function ProjectTasksScreen() {
                   >
                     {phase.name}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -283,16 +288,19 @@ export default function ProjectTasksScreen() {
         }
       >
         {tasks.length === 0 ? (
-          <EmptyState
-            title="No tasks found"
-            description={
-              activeTab !== 'all'
-                ? `No tasks currently matching the "${activeTab}" filter.`
-                : 'Create assigned tasks with deadlines and checklist items to keep your team aligned.'
-            }
-            actionTitle="Create Task"
-            onAction={() => router.push(`/projects/${project.id}/tasks/new` as Href)}
-          />
+          <Card style={styles.emptyCard}>
+            <EmptyState
+              title="No tasks found"
+              description={
+                activeTab !== 'all'
+                  ? `No tasks currently matching the "${activeTab}" filter.`
+                  : 'Create assigned tasks with deadlines and checklist items to keep your team aligned.'
+              }
+              icon={<Ionicons name="checkbox-outline" size={38} color={colors.primary} />}
+              actionTitle="Create Task"
+              onAction={() => router.push(`/projects/${project.id}/tasks/new` as Href)}
+            />
+          </Card>
         ) : (
           <View style={styles.taskList}>
             {tasks.map((task) => {
@@ -302,26 +310,22 @@ export default function ProjectTasksScreen() {
               const priorityOpt = TASK_PRIORITY_OPTIONS.find((p) => p.priority === task.priority);
 
               const assigneeName = task.primary_assignee?.full_name ?? 'Unassigned';
-              const assigneeInitials = task.primary_assignee
-                ? task.primary_assignee.full_name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')
-                    .toUpperCase()
-                    .slice(0, 2)
-                : '?';
 
               return (
                 <Card key={task.id} style={[styles.taskCard, isDone ? styles.taskCardDone : null]}>
-                  <TouchableOpacity
-                    style={styles.taskCardTouchable}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.taskCardTouchable,
+                      pressed && styles.taskCardPressed,
+                    ]}
                     onPress={() => router.push(`/projects/${project.id}/tasks/${task.id}` as Href)}
                     accessibilityRole="button"
                     accessibilityLabel={`View details for task: ${task.title}`}
                   >
-                    {/* Top Row: Checkbox, Title, Badges */}
+                    {/* Top Row: Checkbox, Title */}
                     <View style={styles.taskHeaderRow}>
-                      <TouchableOpacity
+                      <Pressable
+                        hitSlop={10}
                         style={[styles.checkbox, isDone ? styles.checkboxChecked : null]}
                         onPress={() => handleToggleTaskStatus(task)}
                         accessibilityRole="checkbox"
@@ -331,7 +335,7 @@ export default function ProjectTasksScreen() {
                         {isDone ? (
                           <Ionicons name="checkmark" size={14} color={colors.surface} />
                         ) : null}
-                      </TouchableOpacity>
+                      </Pressable>
 
                       <View style={styles.taskTitleCol}>
                         <Text
@@ -348,15 +352,18 @@ export default function ProjectTasksScreen() {
                       <Badge
                         label={statusOpt?.label ?? task.status}
                         variant={statusOpt?.colorVariant ?? 'default'}
+                        size="sm"
                       />
                       <Badge
                         label={priorityOpt?.label ?? task.priority}
                         variant={task.priority === 'urgent' ? 'warning' : 'default'}
+                        size="sm"
                       />
                       {isOverdue ? (
                         <Badge
                           label="OVERDUE"
                           variant="warning"
+                          size="sm"
                           icon={<Ionicons name="alert-circle" size={12} color={colors.warningText} />}
                         />
                       ) : null}
@@ -364,6 +371,7 @@ export default function ProjectTasksScreen() {
                         <Badge
                           label={task.phase.name}
                           variant="info"
+                          size="sm"
                           icon={<Ionicons name="git-commit-outline" size={12} color={colors.infoText} />}
                         />
                       ) : null}
@@ -372,9 +380,7 @@ export default function ProjectTasksScreen() {
                     {/* Bottom Row: Assignee & Checklist/Comment icons */}
                     <View style={styles.taskFooterRow}>
                       <View style={styles.assigneeContainer}>
-                        <View style={styles.assigneeAvatar}>
-                          <Text style={styles.assigneeAvatarText}>{assigneeInitials}</Text>
-                        </View>
+                        <Avatar name={assigneeName} size={24} />
                         <Text style={styles.assigneeName} numberOfLines={1}>
                           {assigneeName}
                         </Text>
@@ -416,7 +422,7 @@ export default function ProjectTasksScreen() {
                         ) : null}
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </Pressable>
                 </Card>
               );
             })}
@@ -437,20 +443,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.base,
-    paddingTop: spacing.base,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.divider,
   },
   topBarTitleContainer: {
     flex: 1,
+    marginRight: spacing.sm,
   },
   projectSubtitle: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
+    ...typography.overline,
+    color: colors.primary,
+    marginBottom: 2,
   },
   screenTitle: {
     ...typography.titleLarge,
@@ -459,21 +465,24 @@ const styles = StyleSheet.create({
   tabContainer: {
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: spacing.xs,
+    borderBottomColor: colors.divider,
+    paddingVertical: spacing.sm,
   },
   tabScrollContent: {
     paddingHorizontal: spacing.base,
     gap: spacing.xs,
   },
   filterChip: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radii.full,
-    backgroundColor: colors.surfaceHover,
+    backgroundColor: colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   filterChipActive: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   filterChipText: {
     ...typography.caption,
@@ -495,8 +504,8 @@ const styles = StyleSheet.create({
   },
   phaseFilterChip: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radii.sm,
+    paddingVertical: 5,
+    borderRadius: radii.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -522,19 +531,23 @@ const styles = StyleSheet.create({
   errorContainer: {
     padding: spacing.base,
   },
+  emptyCard: {
+    paddingVertical: spacing.xs,
+  },
   taskList: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   taskCard: {
     padding: spacing.base,
-    gap: spacing.xs,
   },
   taskCardDone: {
-    opacity: 0.75,
-    backgroundColor: colors.surfaceHover,
+    backgroundColor: colors.surfaceSubtle,
   },
   taskCardTouchable: {
     gap: spacing.xs,
+  },
+  taskCardPressed: {
+    opacity: 0.85,
   },
   taskHeaderRow: {
     flexDirection: 'row',
@@ -546,7 +559,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: radii.sm,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: colors.borderMuted,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -560,8 +573,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   taskTitle: {
-    ...typography.bodyMedium,
-    fontWeight: '600',
+    ...typography.label,
+    fontSize: 15,
     color: colors.textPrimary,
   },
   taskTitleDone: {
@@ -582,34 +595,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 30,
     marginTop: spacing.xs,
-    paddingTop: spacing.xs,
+    paddingTop: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.borderMuted,
+    borderTopColor: colors.divider,
   },
   assigneeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
     flex: 1,
-  },
-  assigneeAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  assigneeAvatarText: {
-    ...typography.caption,
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.primary,
   },
   assigneeName: {
     ...typography.caption,
     color: colors.textSecondary,
-    maxWidth: 120,
+    maxWidth: 140,
   },
   metaIndicators: {
     flexDirection: 'row',
@@ -619,7 +618,7 @@ const styles = StyleSheet.create({
   indicatorItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
   },
   indicatorText: {
     ...typography.caption,

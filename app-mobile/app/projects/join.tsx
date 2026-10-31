@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Button, Card, ErrorView, Input } from '@/components/ui';
+import { Button, Card, ErrorView, IconTile, Input } from '@/components/ui';
 import { projectsService } from '@/features/projects';
 import { colors, spacing, typography } from '@/theme';
 
@@ -58,6 +58,7 @@ export default function JoinProjectScreen() {
         accessibilityRole="scrollview"
       >
         <View style={styles.header}>
+          <Text style={styles.eyebrow}>Invitation Code</Text>
           <Text style={styles.title} accessibilityRole="header">
             Join Workspace
           </Text>
@@ -74,9 +75,9 @@ export default function JoinProjectScreen() {
           />
         ) : null}
 
-        <Card style={styles.card}>
+        <Card style={styles.card} variant="elevated">
           <View style={styles.iconContainer}>
-            <Ionicons name="key-outline" size={40} color={colors.primary} />
+            <IconTile name="key-outline" tone="primary" size={60} />
           </View>
 
           <Input
@@ -88,6 +89,8 @@ export default function JoinProjectScreen() {
             autoCorrect={false}
             helperText="Case-insensitive 6-character alphanumeric code"
             accessibilityLabel="Invitation Code"
+            leftIcon={<Ionicons name="keypad-outline" size={18} color={colors.textSecondary} />}
+            inputStyle={styles.codeInput}
             autoFocus
           />
 
@@ -127,6 +130,11 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.base,
   },
+  eyebrow: {
+    ...typography.overline,
+    color: colors.primary,
+    marginBottom: spacing.xxs,
+  },
   title: {
     ...typography.titleLarge,
     color: colors.textPrimary,
@@ -140,11 +148,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.base,
   },
   card: {
-    padding: spacing.base,
+    padding: spacing.lg,
   },
   iconContainer: {
     alignItems: 'center',
-    marginVertical: spacing.md,
+    marginBottom: spacing.md,
+  },
+  codeInput: {
+    letterSpacing: 3,
+    fontWeight: '700',
   },
   submitBtn: {
     marginTop: spacing.md,

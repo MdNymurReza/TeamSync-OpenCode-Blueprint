@@ -58,6 +58,10 @@ export const tasksService = {
         query = query.eq('phase_id', filters.phaseId);
       }
 
+      if (filters?.milestoneId) {
+        query = query.eq('milestone_id', filters.milestoneId);
+      }
+
       if (filters?.assigneeId) {
         query = query.eq('primary_assignee_id', filters.assigneeId);
       }
@@ -178,6 +182,7 @@ export const tasksService = {
           due_date: input.due_date || null,
           start_date: input.start_date || null,
           phase_id: input.phase_id || null,
+          milestone_id: input.milestone_id || null,
           created_by: user.id,
         })
         .select()
@@ -229,6 +234,7 @@ export const tasksService = {
       if (input.due_date !== undefined) updates.due_date = input.due_date;
       if (input.start_date !== undefined) updates.start_date = input.start_date;
       if (input.phase_id !== undefined) updates.phase_id = input.phase_id;
+      if (input.milestone_id !== undefined) updates.milestone_id = input.milestone_id;
       if (input.is_archived !== undefined) updates.is_archived = input.is_archived;
 
       const { data, error } = await supabase

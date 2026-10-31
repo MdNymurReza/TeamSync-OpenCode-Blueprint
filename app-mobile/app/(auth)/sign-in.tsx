@@ -8,14 +8,16 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Button, Card, ErrorView, Input } from '@/components/ui';
+import { Button, Card, ErrorView, IconTile, Input } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { colors, spacing, typography } from '@/theme';
 
 export default function SignInScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { signIn, isConfigured } = useAuth();
 
   const [email, setEmail] = useState('');
@@ -53,11 +55,16 @@ export default function SignInScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[
+          styles.container,
+          { paddingTop: Math.max(insets.top, spacing.lg) + spacing.lg },
+        ]}
         keyboardShouldPersistTaps="handled"
         accessibilityRole="scrollview"
       >
         <View style={styles.header}>
+          <IconTile name="layers-outline" tone="primary" size={56} style={styles.brandTile} />
+          <Text style={styles.eyebrow}>MelBond</Text>
           <Text style={styles.title} accessibilityRole="header">
             Welcome to MelBond
           </Text>
@@ -78,7 +85,7 @@ export default function SignInScreen() {
           </Card>
         ) : null}
 
-        <Card style={styles.formCard}>
+        <Card style={styles.formCard} variant="elevated">
           {errorMessage ? (
             <ErrorView
               message={errorMessage}
@@ -132,7 +139,7 @@ export default function SignInScreen() {
           <Button
             title="Create an Account"
             onPress={() => router.push('/(auth)/sign-up')}
-            variant="outline"
+            variant="secondary"
             size="md"
             style={styles.signUpButton}
           />
@@ -149,17 +156,24 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: spacing.base,
-    paddingTop: spacing.xxxl,
     paddingBottom: spacing.xxxl,
     justifyContent: 'center',
   },
   header: {
     marginBottom: spacing.lg,
   },
+  brandTile: {
+    marginBottom: spacing.md,
+  },
+  eyebrow: {
+    ...typography.overline,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
   title: {
-    ...typography.titleLarge,
+    ...typography.display,
     color: colors.textPrimary,
-    marginBottom: spacing.xxs,
+    marginBottom: spacing.xs,
   },
   subtitle: {
     ...typography.bodyLarge,
@@ -193,14 +207,15 @@ const styles = StyleSheet.create({
   },
   forgotContainer: {
     alignItems: 'flex-end',
-    marginBottom: spacing.sm,
+    marginTop: -spacing.xs,
+    marginBottom: spacing.xs,
   },
   submitButton: {
     marginTop: spacing.xs,
   },
   footer: {
     alignItems: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
   },
   footerText: {
     ...typography.bodyMedium,

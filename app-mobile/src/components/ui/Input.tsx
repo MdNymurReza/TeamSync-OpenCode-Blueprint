@@ -84,7 +84,7 @@ export function Input({
         {label}
       </Text>
 
-      <View style={getContainerStyle()}>
+      <View collapsable={false} style={getContainerStyle()}>
         {leftIcon ? <View style={styles.leftIconContainer}>{leftIcon}</View> : null}
 
         <TextInput
@@ -100,13 +100,13 @@ export function Input({
           editable={editable}
           autoFocus={autoFocus}
           multiline={multiline}
-          numberOfLines={numberOfLines}
+          numberOfLines={multiline ? numberOfLines : undefined}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           accessibilityLabel={accessibilityLabel ?? label}
           accessibilityHint={accessibilityHint}
           aria-invalid={hasError}
-          style={[styles.input, inputStyle]}
+          style={[styles.input, multiline && styles.inputMultiline, inputStyle]}
         />
 
         {secureTextEntry ? (
@@ -142,19 +142,20 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   label: {
-    ...typography.caption,
-    fontWeight: '600',
+    ...typography.label,
+    fontSize: 13,
+    lineHeight: 18,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: touchTargets.minTouchSize,
+    minHeight: 52,
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
   },
   inputFocused: {
@@ -174,10 +175,15 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   input: {
-    ...typography.bodyLarge,
+    fontSize: typography.bodyLarge.fontSize,
+    fontWeight: typography.bodyLarge.fontWeight,
     color: colors.textPrimary,
     flex: 1,
     paddingVertical: spacing.sm,
+  },
+  inputMultiline: {
+    lineHeight: typography.bodyLarge.lineHeight,
+    textAlignVertical: 'top',
   },
   eyeButton: {
     padding: spacing.xs,

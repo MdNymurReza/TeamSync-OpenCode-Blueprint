@@ -3,10 +3,10 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -151,10 +151,12 @@ export default function CreateTaskScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.headerSubtitle}>{project.name}</Text>
-        <Text style={styles.headerTitle} accessibilityRole="header">
-          Create New Task
-        </Text>
+        <View style={styles.headerBlock}>
+          <Text style={styles.headerSubtitle}>{project.name}</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">
+            Create New Task
+          </Text>
+        </View>
 
         <Card style={styles.formCard}>
           {/* Title */}
@@ -187,8 +189,9 @@ export default function CreateTaskScreen() {
               {TASK_PRIORITY_OPTIONS.map((opt) => {
                 const isSelected = selectedPriority === opt.priority;
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={opt.priority}
+                    hitSlop={6}
                     style={[styles.chip, isSelected ? styles.chipSelected : null]}
                     onPress={() => setSelectedPriority(opt.priority)}
                     accessibilityRole="button"
@@ -203,7 +206,7 @@ export default function CreateTaskScreen() {
                     >
                       {opt.label}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -214,7 +217,8 @@ export default function CreateTaskScreen() {
             <View style={styles.sectionContainer}>
               <Text style={styles.sectionLabel}>Workflow Phase (Optional)</Text>
               <View style={styles.chipRow}>
-                <TouchableOpacity
+                <Pressable
+                  hitSlop={6}
                   style={[styles.chip, selectedPhaseId === null ? styles.chipSelected : null]}
                   onPress={() => setSelectedPhaseId(null)}
                 >
@@ -226,12 +230,13 @@ export default function CreateTaskScreen() {
                   >
                     None
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
                 {phases.map((ph) => {
                   const isSelected = selectedPhaseId === ph.id;
                   return (
-                    <TouchableOpacity
+                    <Pressable
                       key={ph.id}
+                      hitSlop={6}
                       style={[styles.chip, isSelected ? styles.chipSelected : null]}
                       onPress={() => setSelectedPhaseId(ph.id)}
                       accessibilityRole="button"
@@ -245,7 +250,7 @@ export default function CreateTaskScreen() {
                       >
                         {ph.name}
                       </Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   );
                 })}
               </View>
@@ -256,7 +261,8 @@ export default function CreateTaskScreen() {
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionLabel}>Assignee (Optional)</Text>
             <View style={styles.chipRow}>
-              <TouchableOpacity
+              <Pressable
+                hitSlop={6}
                 style={[styles.chip, selectedAssigneeId === null ? styles.chipSelected : null]}
                 onPress={() => setSelectedAssigneeId(null)}
               >
@@ -268,13 +274,14 @@ export default function CreateTaskScreen() {
                 >
                   Unassigned
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
               {members.map((m) => {
                 const isSelected = selectedAssigneeId === m.user_id;
                 const name = m.profile?.full_name ?? 'Member';
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={m.id}
+                    hitSlop={6}
                     style={[styles.chip, isSelected ? styles.chipSelected : null]}
                     onPress={() => setSelectedAssigneeId(m.user_id)}
                     accessibilityRole="button"
@@ -288,7 +295,7 @@ export default function CreateTaskScreen() {
                     >
                       {name} ({m.role})
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -305,13 +312,14 @@ export default function CreateTaskScreen() {
             }}
             error={dueDateError ?? undefined}
             helperText="Tasks past due will be highlighted for review."
+            leftIcon={<Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />}
           />
 
           {/* Action Buttons */}
           <View style={styles.buttonRow}>
             <Button
               title="Cancel"
-              variant="outline"
+              variant="secondary"
               size="md"
               onPress={() => router.back()}
               style={styles.actionBtn}
@@ -345,11 +353,13 @@ const styles = StyleSheet.create({
   errorContainer: {
     padding: spacing.base,
   },
+  headerBlock: {
+    marginBottom: spacing.xs,
+  },
   headerSubtitle: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
+    ...typography.overline,
+    color: colors.primary,
+    marginBottom: 2,
   },
   headerTitle: {
     ...typography.titleLarge,
@@ -357,14 +367,15 @@ const styles = StyleSheet.create({
   },
   formCard: {
     padding: spacing.base,
-    gap: spacing.base,
   },
   sectionContainer: {
-    gap: spacing.xs,
+    gap: spacing.sm,
+    marginBottom: spacing.base,
   },
   sectionLabel: {
-    ...typography.caption,
-    fontWeight: '600',
+    ...typography.label,
+    fontSize: 13,
+    lineHeight: 18,
     color: colors.textPrimary,
   },
   chipRow: {
@@ -373,10 +384,10 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   chip: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceHover,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceSubtle,
     borderWidth: 1,
     borderColor: colors.border,
   },

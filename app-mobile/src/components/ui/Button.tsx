@@ -10,9 +10,15 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import { colors, radii, spacing, touchTargets, typography } from '@/theme';
+import { colors, radii, shadows, spacing, touchTargets, typography } from '@/theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'destructive' | 'text';
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'outline'
+  | 'soft'
+  | 'destructive'
+  | 'text';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps {
@@ -123,7 +129,7 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     minHeight: touchTargets.minTouchSize,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -166,14 +172,21 @@ const styles = StyleSheet.create({
   // Variants
   variant_primary: {
     backgroundColor: colors.primary,
+    ...shadows.subtle,
   },
   pressed_primary: {
     backgroundColor: colors.primaryDark,
   },
   variant_secondary: {
-    backgroundColor: colors.surfaceSubtle,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  variant_soft: {
+    backgroundColor: colors.primaryLight,
+  },
+  pressed_soft: {
+    backgroundColor: colors.primaryBorder,
   },
   pressed_secondary: {
     backgroundColor: colors.surfaceHover,
@@ -205,6 +218,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
     borderColor: 'transparent',
     opacity: 0.65,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   disabledOutline: {
     backgroundColor: 'transparent',
@@ -232,6 +247,9 @@ const styles = StyleSheet.create({
   },
   text_outline: {
     color: colors.primary,
+  },
+  text_soft: {
+    color: colors.primaryDark,
   },
   text_destructive: {
     color: colors.textInverse,

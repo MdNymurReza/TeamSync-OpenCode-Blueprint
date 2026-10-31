@@ -17,6 +17,22 @@ export type ProjectType =
 export type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+export type MilestoneStatus = 'upcoming' | 'in_progress' | 'completed';
+export type MilestoneProgressMode = 'auto' | 'manual';
+
+export type MeetingStatus = 'scheduled' | 'completed' | 'cancelled';
+export type DecisionStatus = 'proposed' | 'accepted' | 'rejected' | 'superseded';
+
+export type ResourceCategory =
+  | 'research'
+  | 'datasets'
+  | 'design'
+  | 'code'
+  | 'reports'
+  | 'presentations'
+  | 'other';
+export type ResourceType = 'external_link' | 'file_upload';
+
 export interface Database {
   public: {
     Tables: {
@@ -244,6 +260,7 @@ export interface Database {
           due_date: string | null;
           start_date: string | null;
           phase_id: string | null;
+          milestone_id: string | null;
           is_archived: boolean;
           created_by: string;
           updated_by: string | null;
@@ -261,6 +278,7 @@ export interface Database {
           due_date?: string | null;
           start_date?: string | null;
           phase_id?: string | null;
+          milestone_id?: string | null;
           is_archived?: boolean;
           created_by: string;
           updated_by?: string | null;
@@ -278,6 +296,7 @@ export interface Database {
           due_date?: string | null;
           start_date?: string | null;
           phase_id?: string | null;
+          milestone_id?: string | null;
           is_archived?: boolean;
           created_by?: string;
           updated_by?: string | null;
@@ -299,6 +318,73 @@ export interface Database {
           },
           {
             foreignKeyName: 'tasks_phase_id_fkey';
+            columns: ['phase_id'];
+            referencedRelation: 'project_phases';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'tasks_milestone_id_fkey';
+            columns: ['milestone_id'];
+            referencedRelation: 'milestones';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      milestones: {
+        Row: {
+          id: string;
+          project_id: string;
+          phase_id: string | null;
+          title: string;
+          description: string | null;
+          target_date: string | null;
+          status: MilestoneStatus;
+          progress_mode: MilestoneProgressMode;
+          manual_progress: number;
+          sequence_order: number;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          phase_id?: string | null;
+          title: string;
+          description?: string | null;
+          target_date?: string | null;
+          status?: MilestoneStatus;
+          progress_mode?: MilestoneProgressMode;
+          manual_progress?: number;
+          sequence_order?: number;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          phase_id?: string | null;
+          title?: string;
+          description?: string | null;
+          target_date?: string | null;
+          status?: MilestoneStatus;
+          progress_mode?: MilestoneProgressMode;
+          manual_progress?: number;
+          sequence_order?: number;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'milestones_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'milestones_phase_id_fkey';
             columns: ['phase_id'];
             referencedRelation: 'project_phases';
             referencedColumns: ['id'];
@@ -410,6 +496,304 @@ export interface Database {
           },
         ];
       };
+      meetings: {
+        Row: {
+          id: string;
+          project_id: string;
+          phase_id: string | null;
+          title: string;
+          agenda: string | null;
+          location_or_link: string | null;
+          starts_at: string;
+          ends_at: string | null;
+          status: MeetingStatus;
+          minutes_summary: string | null;
+          attendee_ids: string[];
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          phase_id?: string | null;
+          title: string;
+          agenda?: string | null;
+          location_or_link?: string | null;
+          starts_at: string;
+          ends_at?: string | null;
+          status?: MeetingStatus;
+          minutes_summary?: string | null;
+          attendee_ids?: string[];
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          phase_id?: string | null;
+          title?: string;
+          agenda?: string | null;
+          location_or_link?: string | null;
+          starts_at?: string;
+          ends_at?: string | null;
+          status?: MeetingStatus;
+          minutes_summary?: string | null;
+          attendee_ids?: string[];
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'meetings_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'meetings_phase_id_fkey';
+            columns: ['phase_id'];
+            referencedRelation: 'project_phases';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'meetings_created_by_fkey';
+            columns: ['created_by'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      meeting_action_items: {
+        Row: {
+          id: string;
+          meeting_id: string;
+          project_id: string;
+          title: string;
+          assignee_id: string | null;
+          due_date: string | null;
+          is_completed: boolean;
+          converted_task_id: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          meeting_id: string;
+          project_id: string;
+          title: string;
+          assignee_id?: string | null;
+          due_date?: string | null;
+          is_completed?: boolean;
+          converted_task_id?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          meeting_id?: string;
+          project_id?: string;
+          title?: string;
+          assignee_id?: string | null;
+          due_date?: string | null;
+          is_completed?: boolean;
+          converted_task_id?: string | null;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'meeting_action_items_meeting_id_fkey';
+            columns: ['meeting_id'];
+            referencedRelation: 'meetings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'meeting_action_items_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'meeting_action_items_assignee_id_fkey';
+            columns: ['assignee_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'meeting_action_items_converted_task_id_fkey';
+            columns: ['converted_task_id'];
+            referencedRelation: 'tasks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      decisions: {
+        Row: {
+          id: string;
+          project_id: string;
+          title: string;
+          description: string;
+          context_reason: string | null;
+          status: DecisionStatus;
+          decided_at: string;
+          meeting_id: string | null;
+          task_id: string | null;
+          milestone_id: string | null;
+          supersedes_id: string | null;
+          superseded_by_id: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          title: string;
+          description: string;
+          context_reason?: string | null;
+          status?: DecisionStatus;
+          decided_at?: string;
+          meeting_id?: string | null;
+          task_id?: string | null;
+          milestone_id?: string | null;
+          supersedes_id?: string | null;
+          superseded_by_id?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          title?: string;
+          description?: string;
+          context_reason?: string | null;
+          status?: DecisionStatus;
+          decided_at?: string;
+          meeting_id?: string | null;
+          task_id?: string | null;
+          milestone_id?: string | null;
+          supersedes_id?: string | null;
+          superseded_by_id?: string | null;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'decisions_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'decisions_meeting_id_fkey';
+            columns: ['meeting_id'];
+            referencedRelation: 'meetings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'decisions_task_id_fkey';
+            columns: ['task_id'];
+            referencedRelation: 'tasks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'decisions_milestone_id_fkey';
+            columns: ['milestone_id'];
+            referencedRelation: 'milestones';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'decisions_created_by_fkey';
+            columns: ['created_by'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      resources: {
+        Row: {
+          id: string;
+          project_id: string;
+          milestone_id: string | null;
+          title: string;
+          description: string | null;
+          category: ResourceCategory;
+          custom_category: string | null;
+          resource_type: ResourceType;
+          external_url: string | null;
+          storage_path: string | null;
+          file_name: string | null;
+          mime_type: string | null;
+          file_size_bytes: number | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          project_id: string;
+          milestone_id?: string | null;
+          title: string;
+          description?: string | null;
+          category?: ResourceCategory;
+          custom_category?: string | null;
+          resource_type: ResourceType;
+          external_url?: string | null;
+          storage_path?: string | null;
+          file_name?: string | null;
+          mime_type?: string | null;
+          file_size_bytes?: number | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          project_id?: string;
+          milestone_id?: string | null;
+          title?: string;
+          description?: string | null;
+          category?: ResourceCategory;
+          custom_category?: string | null;
+          resource_type?: ResourceType;
+          external_url?: string | null;
+          storage_path?: string | null;
+          file_name?: string | null;
+          mime_type?: string | null;
+          file_size_bytes?: number | null;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'resources_project_id_fkey';
+            columns: ['project_id'];
+            referencedRelation: 'projects';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'resources_milestone_id_fkey';
+            columns: ['milestone_id'];
+            referencedRelation: 'milestones';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'resources_created_by_fkey';
+            columns: ['created_by'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -466,6 +850,12 @@ export interface Database {
         };
         Returns: void;
       };
+      convert_action_item_to_task: {
+        Args: {
+          p_action_item_id: string;
+        };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;
@@ -500,3 +890,23 @@ export type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
 export type TaskCollaborator = Database['public']['Tables']['task_collaborators']['Row'];
 export type TaskChecklistItem = Database['public']['Tables']['task_checklist_items']['Row'];
 export type TaskComment = Database['public']['Tables']['task_comments']['Row'];
+
+export type Milestone = Database['public']['Tables']['milestones']['Row'];
+export type MilestoneInsert = Database['public']['Tables']['milestones']['Insert'];
+export type MilestoneUpdate = Database['public']['Tables']['milestones']['Update'];
+
+export type Meeting = Database['public']['Tables']['meetings']['Row'];
+export type MeetingInsert = Database['public']['Tables']['meetings']['Insert'];
+export type MeetingUpdate = Database['public']['Tables']['meetings']['Update'];
+
+export type MeetingActionItem = Database['public']['Tables']['meeting_action_items']['Row'];
+export type MeetingActionItemInsert = Database['public']['Tables']['meeting_action_items']['Insert'];
+export type MeetingActionItemUpdate = Database['public']['Tables']['meeting_action_items']['Update'];
+
+export type Decision = Database['public']['Tables']['decisions']['Row'];
+export type DecisionInsert = Database['public']['Tables']['decisions']['Insert'];
+export type DecisionUpdate = Database['public']['Tables']['decisions']['Update'];
+
+export type Resource = Database['public']['Tables']['resources']['Row'];
+export type ResourceInsert = Database['public']['Tables']['resources']['Insert'];
+export type ResourceUpdate = Database['public']['Tables']['resources']['Update'];

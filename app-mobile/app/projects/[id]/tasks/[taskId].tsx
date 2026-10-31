@@ -3,17 +3,27 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Badge, Button, Card, ErrorView, Input, LoadingView } from '@/components/ui';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  ErrorView,
+  Input,
+  LoadingView,
+  ProgressBar,
+  SectionHeader,
+} from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { projectsService, ProjectWithRole } from '@/features/projects';
 import {
@@ -272,6 +282,7 @@ export default function TaskDetailsScreen() {
 
   const statusOpt = TASK_STATUS_OPTIONS.find((s) => s.status === task.status);
   const priorityOpt = TASK_PRIORITY_OPTIONS.find((p) => p.priority === task.priority);
+  const completedChecklistCount = checklist.filter((c) => c.is_completed).length;
 
   return (
     <KeyboardAvoidingView
@@ -292,20 +303,23 @@ export default function TaskDetailsScreen() {
         }
       >
         {/* Main Task Header Card */}
-        <Card style={styles.mainCard}>
+        <Card style={styles.mainCard} variant="elevated">
           <View style={styles.headerBadgeRow}>
             <Badge
               label={statusOpt?.label ?? task.status}
               variant={statusOpt?.colorVariant ?? 'default'}
+              size="sm"
             />
             <Badge
               label={priorityOpt?.label ?? task.priority}
               variant={task.priority === 'urgent' ? 'warning' : 'default'}
+              size="sm"
             />
             {isOverdue ? (
               <Badge
                 label="OVERDUE"
                 variant="warning"
+                size="sm"
                 icon={<Ionicons name="alert-circle" size={12} color={colors.warningText} />}
               />
             ) : null}
@@ -313,6 +327,7 @@ export default function TaskDetailsScreen() {
               <Badge
                 label={task.phase.name}
                 variant="info"
+                size="sm"
                 icon={<Ionicons name="git-commit-outline" size={12} color={colors.infoText} />}
               />
             ) : null}
@@ -336,8 +351,9 @@ export default function TaskDetailsScreen() {
                 const isSelected = task.status === st;
                 const opt = TASK_STATUS_OPTIONS.find((o) => o.status === st);
                 return (
-                  <TouchableOpacity
+                  <Pressable
                     key={st}
+                    hitSlop={6}
                     style={[styles.statusOptionChip, isSelected ? styles.statusOptionChipActive : null]}
                     onPress={() => handleStatusChange(st)}
                     accessibilityRole="button"
@@ -352,7 +368,7 @@ export default function TaskDetailsScreen() {
                     >
                       {opt?.label}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 );
               })}
             </View>
@@ -362,9 +378,12 @@ export default function TaskDetailsScreen() {
           <View style={styles.metaGrid}>
             <View style={styles.metaCell}>
               <Text style={styles.metaCellLabel}>Primary Assignee</Text>
-              <Text style={styles.metaCellValue}>
-                {task.primary_assignee?.full_name ?? 'Unassigned'}
-              </Text>
+              <View style={styles.assigneeValueRow}>
+                <Avatar name={task.primary_assignee?.full_name ?? 'Unassigned'} size={24} />
+                <Text style={styles.metaCellValue} numberOfLines={1}>
+                  {task.primary_assignee?.full_name ?? 'Unassigned'}
+                </Text>
+              </View>
             </View>
             <View style={styles.metaCell}>
               <Text style={styles.metaCellLabel}>Due Date</Text>
@@ -382,15 +401,24 @@ export default function TaskDetailsScreen() {
 
         {/* Checklist Section */}
         <Card style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>
-              Checklist ({checklist.filter((c) => c.is_completed).length}/{checklist.length})
-            </Text>
-          </View>
+          <SectionHeader
+            title={`Checklist (${completedChecklistCount}/${checklist.length})`}
+            style={styles.sectionHeader}
+          />
+
+          {checklist.length > 0 ? (
+            <ProgressBar
+              value={completedChecklistCount}
+              total={checklist.length}
+              label="Checklist progress"
+              tone={completedChecklistCount === checklist.length ? 'success' : 'primary'}
+            />
+          ) : null}
 
           {checklist.map((item) => (
             <View key={item.id} style={styles.checklistItemRow}>
-              <TouchableOpacity
+              <Pressable
+                hitSlop={8}
                 style={[styles.checkbox, item.is_completed ? styles.checkboxChecked : null]}
                 onPress={() => handleToggleChecklist(item)}
                 accessibilityRole="checkbox"
@@ -400,7 +428,7 @@ export default function TaskDetailsScreen() {
                 {item.is_completed ? (
                   <Ionicons name="checkmark" size={14} color={colors.surface} />
                 ) : null}
-              </TouchableOpacity>
+              </Pressable>
               <Text
                 style={[
                   styles.checklistItemTitle,
@@ -409,13 +437,15 @@ export default function TaskDetailsScreen() {
               >
                 {item.title}
               </Text>
-              <TouchableOpacity
+              <Pressable
+                hitSlop={8}
                 onPress={() => handleDeleteChecklist(item.id)}
                 style={styles.deleteChecklistBtn}
+                accessibilityRole="button"
                 accessibilityLabel={`Delete item ${item.title}`}
               >
                 <Ionicons name="close" size={16} color={colors.textMuted} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ))}
 
@@ -430,7 +460,7 @@ export default function TaskDetailsScreen() {
             />
             <Button
               title="Add"
-              variant="outline"
+              variant="secondary"
               size="sm"
               loading={isAddingChecklist}
               onPress={handleAddChecklist}
@@ -440,25 +470,18 @@ export default function TaskDetailsScreen() {
 
         {/* Comments Section */}
         <Card style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Comments ({comments.length})</Text>
-          </View>
+          <SectionHeader
+            title={`Comments (${comments.length})`}
+            style={styles.sectionHeader}
+          />
 
           {comments.map((comment) => {
             const authorName = comment.author?.full_name ?? 'Team Member';
-            const initials = authorName
-              .split(' ')
-              .map((n) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2);
             const canDeleteComment = comment.user_id === user?.id || isOwnerOrAdmin;
 
             return (
               <View key={comment.id} style={styles.commentRow}>
-                <View style={styles.commentAvatar}>
-                  <Text style={styles.commentAvatarText}>{initials}</Text>
-                </View>
+                <Avatar name={authorName} size={34} />
                 <View style={styles.commentBody}>
                   <View style={styles.commentMetaRow}>
                     <Text style={styles.commentAuthor}>{authorName}</Text>
@@ -466,12 +489,14 @@ export default function TaskDetailsScreen() {
                       {new Date(comment.created_at).toLocaleDateString()}
                     </Text>
                     {canDeleteComment ? (
-                      <TouchableOpacity
+                      <Pressable
+                        hitSlop={8}
                         onPress={() => handleDeleteComment(comment.id)}
+                        accessibilityRole="button"
                         accessibilityLabel="Delete comment"
                       >
-                        <Ionicons name="trash-outline" size={14} color={colors.danger} />
-                      </TouchableOpacity>
+                        <Ionicons name="trash-outline" size={15} color={colors.danger} />
+                      </Pressable>
                     ) : null}
                   </View>
                   <Text style={styles.commentContent}>{comment.content}</Text>
@@ -505,7 +530,7 @@ export default function TaskDetailsScreen() {
         <View style={styles.footerActions}>
           <Button
             title={task.is_archived ? 'Restore Task' : 'Archive Task'}
-            variant="outline"
+            variant="secondary"
             size="md"
             leftIcon={
               <Ionicons
@@ -583,10 +608,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   statusOptionChip: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: 6,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceHover,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceSubtle,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -605,7 +630,7 @@ const styles = StyleSheet.create({
   metaGrid: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.divider,
     paddingTop: spacing.sm,
     marginTop: spacing.xs,
     gap: spacing.base,
@@ -616,11 +641,17 @@ const styles = StyleSheet.create({
   metaCellLabel: {
     ...typography.caption,
     color: colors.textMuted,
+    marginBottom: 4,
+  },
+  assigneeValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   metaCellValue: {
-    ...typography.bodyMedium,
-    fontWeight: '600',
+    ...typography.label,
     color: colors.textPrimary,
+    flexShrink: 1,
   },
   overdueValue: {
     color: colors.dangerText,
@@ -630,28 +661,22 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    ...typography.titleMedium,
-    color: colors.textPrimary,
+    marginBottom: 0,
   },
   checklistItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderMuted,
+    borderBottomColor: colors.divider,
   },
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     borderRadius: radii.sm,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: colors.borderMuted,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -684,22 +709,9 @@ const styles = StyleSheet.create({
   commentRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderMuted,
-  },
-  commentAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  commentAvatarText: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.primary,
+    borderBottomColor: colors.divider,
   },
   commentBody: {
     flex: 1,

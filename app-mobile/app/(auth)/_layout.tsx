@@ -1,5 +1,5 @@
 import { Redirect, Stack } from 'expo-router';
-import { colors, typography } from '@/theme';
+import { stackScreenOptions } from '@/theme';
 import { useAuth } from '@/features/auth';
 
 export default function AuthLayout() {
@@ -12,19 +12,8 @@ export default function AuthLayout() {
   return (
     <Stack
       screenOptions={{
+        ...stackScreenOptions,
         headerShown: true,
-        headerStyle: {
-          backgroundColor: colors.surface,
-        },
-        headerTitleStyle: {
-          ...typography.titleSmall,
-          color: colors.textPrimary,
-        },
-        headerShadowVisible: false,
-        headerTintColor: colors.primary,
-        contentStyle: {
-          backgroundColor: colors.background,
-        },
       }}
     >
       <Stack.Screen

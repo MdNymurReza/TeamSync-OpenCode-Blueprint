@@ -1,13 +1,16 @@
 # Supabase — backend (migrations, Edge Functions, seed)
 
-Status: **Phase 5 active.** Migrations created:
+Status: **Phase 8 active.** Migrations created:
 - `supabase/migrations/20261030000000_initial_schema.sql` (Profiles, triggers, RLS)
 - `supabase/migrations/20261030010000_projects_and_members.sql` (Projects, roles, invitations, membership RPCs, RLS)
 - `supabase/migrations/20261030020000_playbooks_and_phases.sql` (Playbooks, project_phases, RLS, seed_project_phases, reorder_project_phases RPCs)
 - `supabase/migrations/20261030030000_task_management.sql` (Tasks, task_collaborators, task_checklist_items, task_comments, membership validation triggers, RLS)
+- `supabase/migrations/20261031000000_milestones_and_timeline.sql` (Milestones, task milestone_id foreign key, cross-project integrity triggers, RLS)
+- `supabase/migrations/20261031010000_meetings_and_decisions.sql` (Meetings, meeting_action_items, decisions, decision history protection trigger, idempotent action-item-to-task RPC, RLS)
+- `supabase/migrations/20261031020000_resources_and_storage.sql` (Resources table, private `project-resources` storage bucket with 10 MB / MIME limits, membership storage RLS policies, cross-project integrity triggers)
 
 ### Applying to a Supabase project:
-- **Option A (Supabase Dashboard):** Open your Supabase project -> SQL Editor -> paste `supabase/migrations/20261030030000_task_management.sql` -> Run.
+- **Option A (Supabase Dashboard):** Open your Supabase project -> SQL Editor -> paste `supabase/migrations/20261031020000_resources_and_storage.sql` -> Run.
 - **Option B (Supabase CLI linked project):** `npx supabase db push`.
 - **Client Configuration:** Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `app-mobile/.env`.
 

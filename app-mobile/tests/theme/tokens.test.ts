@@ -1,6 +1,6 @@
-import { colors, radii, shadows, spacing, touchTargets, typography } from '@/theme';
+import { avatarPalette, colors, radii, shadows, spacing, touchTargets, typography } from '@/theme';
 
-describe('Design Tokens (Phase 1)', () => {
+describe('Design Tokens (Phase 1 & Phase 5.5)', () => {
   it('defines an 8-point spacing rhythm', () => {
     expect(spacing.none).toBe(0);
     expect(spacing.xs).toBe(4);
@@ -41,11 +41,15 @@ describe('Design Tokens (Phase 1)', () => {
     expect(colors.infoText).toBeDefined();
   });
 
-  it('provides typography scale and radii tokens', () => {
+  it('provides typography scale, radii, shadows, and avatar palette tokens', () => {
+    expect(typography.display.fontSize).toBe(28);
     expect(typography.titleLarge.fontSize).toBe(24);
     expect(typography.bodyLarge.fontSize).toBe(16);
+    expect(typography.overline.fontSize).toBe(11);
     expect(radii.md).toBe(8);
+    expect(radii.xl).toBe(16);
     expect(radii.full).toBe(9999);
     expect(shadows.card).toBeDefined();
+    expect(avatarPalette.length).toBeGreaterThanOrEqual(6);
   });
 });

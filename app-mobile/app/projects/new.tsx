@@ -11,13 +11,13 @@ import {
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Button, Card, ErrorView, Input } from '@/components/ui';
+import { Button, Card, ErrorView, IconTile, Input } from '@/components/ui';
 import {
   projectsService,
   PROJECT_TYPE_OPTIONS,
   ProjectType,
 } from '@/features/projects';
-import { colors, radii, spacing, typography } from '@/theme';
+import { colors, radii, spacing, touchTargets, typography } from '@/theme';
 
 export default function CreateProjectScreen() {
   const router = useRouter();
@@ -74,6 +74,7 @@ export default function CreateProjectScreen() {
         accessibilityRole="scrollview"
       >
         <View style={styles.header}>
+          <Text style={styles.eyebrow}>New Workspace</Text>
           <Text style={styles.title} accessibilityRole="header">
             Create Workspace
           </Text>
@@ -91,6 +92,8 @@ export default function CreateProjectScreen() {
         ) : null}
 
         <Card style={styles.card}>
+          <Text style={styles.sectionOverline}>Workspace Identity</Text>
+
           <Input
             label="Project Name *"
             value={name}
@@ -104,19 +107,24 @@ export default function CreateProjectScreen() {
           <View style={styles.typeGrid} accessibilityRole="radiogroup">
             {PROJECT_TYPE_OPTIONS.map((opt) => {
               const isSelected = projectType === opt.type;
+              const iconName = opt.icon as unknown as keyof typeof Ionicons.glyphMap;
               return (
                 <Pressable
                   key={opt.type}
-                  style={[styles.typeOption, isSelected && styles.typeOptionSelected]}
+                  style={({ pressed }) => [
+                    styles.typeOption,
+                    isSelected && styles.typeOptionSelected,
+                    pressed && styles.typeOptionPressed,
+                  ]}
                   onPress={() => setProjectType(opt.type)}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: isSelected }}
                   accessibilityLabel={opt.label}
                 >
-                  <Ionicons
-                    name={opt.icon as unknown as keyof typeof Ionicons.glyphMap}
-                    size={22}
-                    color={isSelected ? colors.primary : colors.textMuted}
+                  <IconTile
+                    name={iconName}
+                    tone={isSelected ? 'primary' : 'neutral'}
+                    size={40}
                   />
                   <View style={styles.typeOptionTextCol}>
                     <Text
@@ -129,10 +137,17 @@ export default function CreateProjectScreen() {
                     </Text>
                     <Text style={styles.typeOptionDesc}>{opt.description}</Text>
                   </View>
+                  <Ionicons
+                    name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={22}
+                    color={isSelected ? colors.primary : colors.borderMuted}
+                  />
                 </Pressable>
               );
             })}
           </View>
+
+          <Text style={styles.sectionOverline}>Academic Context</Text>
 
           <Input
             label="Description (optional)"
@@ -202,6 +217,11 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.base,
   },
+  eyebrow: {
+    ...typography.overline,
+    color: colors.primary,
+    marginBottom: spacing.xxs,
+  },
   title: {
     ...typography.titleLarge,
     color: colors.textPrimary,
@@ -217,22 +237,29 @@ const styles = StyleSheet.create({
   card: {
     padding: spacing.base,
   },
+  sectionOverline: {
+    ...typography.overline,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
   fieldLabel: {
-    ...typography.bodyMedium,
-    fontWeight: '600',
+    ...typography.label,
+    fontSize: 13,
+    lineHeight: 18,
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   typeGrid: {
-    gap: spacing.xs,
-    marginBottom: spacing.base,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   typeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
+    minHeight: touchTargets.minTouchSize,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
     borderColor: colors.border,
     backgroundColor: colors.surfaceSubtle,
   },
@@ -240,22 +267,22 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     backgroundColor: colors.surface,
   },
+  typeOptionPressed: {
+    backgroundColor: colors.surfaceHover,
+  },
   typeOptionTextCol: {
     flex: 1,
-    marginLeft: spacing.sm,
+    marginHorizontal: spacing.md,
   },
   typeOptionTitle: {
-    ...typography.bodyMedium,
-    fontWeight: '500',
+    ...typography.label,
     color: colors.textPrimary,
   },
   typeOptionTitleSelected: {
     color: colors.primary,
-    fontWeight: '600',
   },
   typeOptionDesc: {
     ...typography.caption,
-    fontSize: 11,
     marginTop: 2,
   },
   row: {
@@ -266,6 +293,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   submitBtn: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
 });

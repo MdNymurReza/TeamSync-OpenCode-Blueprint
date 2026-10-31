@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Button, Card, ErrorView, Input } from '@/components/ui';
+import { Button, Card, ErrorView, IconTile, Input } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { colors, radii, spacing, typography } from '@/theme';
 
@@ -57,6 +57,7 @@ export default function ResetPasswordScreen() {
         accessibilityRole="scrollview"
       >
         <View style={styles.header}>
+          <IconTile name="key-outline" tone="primary" size={48} style={styles.brandTile} />
           <Text style={styles.title} accessibilityRole="header">
             Password Recovery
           </Text>
@@ -65,7 +66,7 @@ export default function ResetPasswordScreen() {
           </Text>
         </View>
 
-        <Card style={styles.formCard}>
+        <Card style={styles.formCard} variant="elevated">
           {errorMessage ? (
             <ErrorView
               message={errorMessage}
@@ -125,19 +126,22 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: spacing.base,
-    paddingTop: spacing.base,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.xxxl,
   },
   header: {
-    marginBottom: spacing.base,
+    marginBottom: spacing.lg,
+  },
+  brandTile: {
+    marginBottom: spacing.md,
   },
   title: {
     ...typography.titleLarge,
     color: colors.textPrimary,
-    marginBottom: spacing.xxs,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    ...typography.bodyLarge,
+    ...typography.bodyMedium,
     color: colors.textSecondary,
   },
   formCard: {
@@ -150,7 +154,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.successBg,
     borderColor: colors.successBorder,
     borderWidth: 1,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     padding: spacing.md,
     marginBottom: spacing.base,
   },

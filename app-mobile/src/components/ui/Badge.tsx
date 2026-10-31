@@ -81,12 +81,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxs,
   },
   size_md: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   textBase: {
     ...typography.caption,
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
   textSize_sm: {
     fontSize: 11,

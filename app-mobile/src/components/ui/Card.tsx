@@ -66,7 +66,7 @@ export function Card({
 const styles = StyleSheet.create({
   base: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
+    borderRadius: radii.xl,
     padding: spacing.base,
   },
   interactive: {
@@ -74,18 +74,20 @@ const styles = StyleSheet.create({
   },
   pressed: {
     backgroundColor: colors.surfaceSubtle,
+    transform: [{ scale: 0.99 }],
   },
   variant_default: {
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.subtle,
   },
   variant_outlined: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.borderMuted,
   },
   variant_elevated: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.divider,
     ...shadows.card,
   },
 });

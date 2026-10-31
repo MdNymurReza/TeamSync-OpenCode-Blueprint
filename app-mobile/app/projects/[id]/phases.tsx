@@ -2,17 +2,26 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Modal,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Badge, Button, Card, EmptyState, ErrorView, Input, LoadingView } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorView,
+  Input,
+  LoadingView,
+  ProgressBar,
+} from '@/components/ui';
 import {
   PLAYBOOK_TEMPLATES,
   playbooksService,
@@ -304,9 +313,9 @@ export default function ProjectPhasesScreen() {
         }
       >
         {/* Header Summary Card */}
-        <Card style={styles.summaryCard}>
+        <Card style={styles.summaryCard} variant="elevated">
           <View style={styles.summaryHeader}>
-            <View>
+            <View style={styles.summaryTitleCol}>
               <Text style={styles.projectSubtitle}>{project.name}</Text>
               <Text style={styles.screenTitle} accessibilityRole="header">
                 Workflow & Phases
@@ -318,10 +327,14 @@ export default function ProjectPhasesScreen() {
             />
           </View>
 
-          {/* Progress bar */}
-          <View style={styles.progressBarTrack} accessibilityRole="progressbar">
-            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
-          </View>
+          <ProgressBar
+            value={completedCount}
+            total={phases.length}
+            label="Workflow phases completion"
+            tone={progressPercent === 100 ? 'success' : 'primary'}
+            height={8}
+            style={styles.progressBar}
+          />
 
           <Text style={styles.progressSubtext}>
             {completedCount} of {phases.length} phases completed
@@ -339,7 +352,7 @@ export default function ProjectPhasesScreen() {
               />
               <Button
                 title="Playbook Templates"
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 leftIcon={<Ionicons name="albums-outline" size={16} color={colors.textPrimary} />}
                 onPress={() => setIsTemplateModalVisible(true)}
@@ -355,12 +368,14 @@ export default function ProjectPhasesScreen() {
 
         {/* Phase List */}
         {phases.length === 0 ? (
-          <EmptyState
-            title="No phases yet"
-            description="Set up your project workflow by selecting a playbook template or adding custom phases."
-            actionTitle={isOwnerOrAdmin ? 'Apply Playbook' : undefined}
-            onAction={isOwnerOrAdmin ? () => setIsTemplateModalVisible(true) : undefined}
-          />
+          <Card style={styles.emptyCard}>
+            <EmptyState
+              title="No phases yet"
+              description="Set up your project workflow by selecting a playbook template or adding custom phases."
+              actionTitle={isOwnerOrAdmin ? 'Apply Playbook' : undefined}
+              onAction={isOwnerOrAdmin ? () => setIsTemplateModalVisible(true) : undefined}
+            />
+          </Card>
         ) : (
           <View style={styles.phaseList}>
             {phases.map((phase, index) => {
@@ -374,7 +389,8 @@ export default function ProjectPhasesScreen() {
                 >
                   <View style={styles.phaseHeaderRow}>
                     {/* Completion checkbox / toggle */}
-                    <TouchableOpacity
+                    <Pressable
+                      hitSlop={10}
                       style={[
                         styles.checkbox,
                         phase.is_completed ? styles.checkboxChecked : null,
@@ -388,7 +404,7 @@ export default function ProjectPhasesScreen() {
                       {phase.is_completed ? (
                         <Ionicons name="checkmark" size={16} color={colors.surface} />
                       ) : null}
-                    </TouchableOpacity>
+                    </Pressable>
 
                     {/* Phase sequence & title */}
                     <View style={styles.phaseTitleContainer}>
@@ -408,10 +424,16 @@ export default function ProjectPhasesScreen() {
                     {/* Action buttons */}
                     {isOwnerOrAdmin ? (
                       <View style={styles.phaseActionsRow}>
-                        <TouchableOpacity
-                          style={[styles.actionIconBtn, isFirst ? styles.iconDisabled : null]}
+                        <Pressable
+                          hitSlop={6}
+                          style={({ pressed }) => [
+                            styles.actionIconBtn,
+                            isFirst ? styles.iconDisabled : null,
+                            pressed && !isFirst && styles.actionIconPressed,
+                          ]}
                           disabled={isFirst}
                           onPress={() => handleMoveUp(index)}
+                          accessibilityRole="button"
                           accessibilityLabel={`Move ${phase.name} up`}
                         >
                           <Ionicons
@@ -419,11 +441,17 @@ export default function ProjectPhasesScreen() {
                             size={16}
                             color={isFirst ? colors.textMuted : colors.textPrimary}
                           />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.actionIconBtn, isLast ? styles.iconDisabled : null]}
+                        </Pressable>
+                        <Pressable
+                          hitSlop={6}
+                          style={({ pressed }) => [
+                            styles.actionIconBtn,
+                            isLast ? styles.iconDisabled : null,
+                            pressed && !isLast && styles.actionIconPressed,
+                          ]}
                           disabled={isLast}
                           onPress={() => handleMoveDown(index)}
+                          accessibilityRole="button"
                           accessibilityLabel={`Move ${phase.name} down`}
                         >
                           <Ionicons
@@ -431,21 +459,31 @@ export default function ProjectPhasesScreen() {
                             size={16}
                             color={isLast ? colors.textMuted : colors.textPrimary}
                           />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.actionIconBtn}
+                        </Pressable>
+                        <Pressable
+                          hitSlop={6}
+                          style={({ pressed }) => [
+                            styles.actionIconBtn,
+                            pressed && styles.actionIconPressed,
+                          ]}
                           onPress={() => openEditModal(phase)}
+                          accessibilityRole="button"
                           accessibilityLabel={`Edit ${phase.name}`}
                         >
                           <Ionicons name="pencil" size={16} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={styles.actionIconBtn}
+                        </Pressable>
+                        <Pressable
+                          hitSlop={6}
+                          style={({ pressed }) => [
+                            styles.actionIconBtn,
+                            pressed && styles.actionIconPressed,
+                          ]}
                           onPress={() => handleDeletePhase(phase)}
+                          accessibilityRole="button"
                           accessibilityLabel={`Delete ${phase.name}`}
                         >
                           <Ionicons name="trash-outline" size={16} color={colors.danger} />
-                        </TouchableOpacity>
+                        </Pressable>
                       </View>
                     ) : null}
                   </View>
@@ -471,12 +509,14 @@ export default function ProjectPhasesScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Project Phase</Text>
-              <TouchableOpacity
+              <Pressable
+                hitSlop={10}
                 onPress={() => setIsAddModalVisible(false)}
+                accessibilityRole="button"
                 accessibilityLabel="Close modal"
               >
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             {formError ? <Text style={styles.modalErrorText}>{formError}</Text> : null}
@@ -501,7 +541,7 @@ export default function ProjectPhasesScreen() {
             <View style={styles.modalBtnRow}>
               <Button
                 title="Cancel"
-                variant="outline"
+                variant="secondary"
                 size="md"
                 onPress={() => setIsAddModalVisible(false)}
                 style={styles.modalBtn}
@@ -530,12 +570,14 @@ export default function ProjectPhasesScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Phase</Text>
-              <TouchableOpacity
+              <Pressable
+                hitSlop={10}
                 onPress={() => setIsEditModalVisible(false)}
+                accessibilityRole="button"
                 accessibilityLabel="Close modal"
               >
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             {formError ? <Text style={styles.modalErrorText}>{formError}</Text> : null}
@@ -560,7 +602,7 @@ export default function ProjectPhasesScreen() {
             <View style={styles.modalBtnRow}>
               <Button
                 title="Cancel"
-                variant="outline"
+                variant="secondary"
                 size="md"
                 onPress={() => setIsEditModalVisible(false)}
                 style={styles.modalBtn}
@@ -589,12 +631,14 @@ export default function ProjectPhasesScreen() {
           <View style={[styles.modalContent, styles.templateModalContent]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Playbook Templates</Text>
-              <TouchableOpacity
+              <Pressable
+                hitSlop={10}
                 onPress={() => setIsTemplateModalVisible(false)}
+                accessibilityRole="button"
                 accessibilityLabel="Close modal"
               >
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <Text style={styles.templateModalSubtitle}>
@@ -603,16 +647,19 @@ export default function ProjectPhasesScreen() {
 
             <ScrollView style={styles.templateList}>
               {Object.values(PLAYBOOK_TEMPLATES).map((template) => (
-                <TouchableOpacity
+                <Pressable
                   key={template.id}
-                  style={styles.templateCard}
+                  style={({ pressed }) => [
+                    styles.templateCard,
+                    pressed && styles.templateCardPressed,
+                  ]}
                   onPress={() => handleApplyTemplate(template.id)}
                   accessibilityRole="button"
                   accessibilityLabel={`Apply ${template.title} template`}
                 >
                   <View style={styles.templateCardHeader}>
                     <Text style={styles.templateCardTitle}>{template.title}</Text>
-                    <Badge label={`${template.defaultPhases.length} Phases`} variant="default" />
+                    <Badge label={`${template.defaultPhases.length} Phases`} variant="default" size="sm" />
                   </View>
                   <Text style={styles.templateCardDesc}>{template.description}</Text>
                   <View style={styles.templatePhasesPreview}>
@@ -622,7 +669,7 @@ export default function ProjectPhasesScreen() {
                       </Text>
                     ))}
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </ScrollView>
           </View>
@@ -654,27 +701,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  summaryTitleCol: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
   projectSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    textTransform: 'uppercase',
+    ...typography.overline,
+    color: colors.primary,
+    marginBottom: 2,
   },
   screenTitle: {
     ...typography.titleLarge,
     color: colors.textPrimary,
   },
-  progressBarTrack: {
-    height: 8,
-    backgroundColor: colors.surfaceHover,
-    borderRadius: radii.full,
-    overflow: 'hidden',
+  progressBar: {
     marginTop: spacing.xs,
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: radii.full,
   },
   progressSubtext: {
     ...typography.caption,
@@ -690,6 +731,9 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.xs,
   },
+  emptyCard: {
+    paddingVertical: spacing.xs,
+  },
   phaseList: {
     gap: spacing.sm,
   },
@@ -698,8 +742,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   phaseCardCompleted: {
-    opacity: 0.8,
-    backgroundColor: colors.surfaceHover,
+    backgroundColor: colors.surfaceSubtle,
   },
   phaseHeaderRow: {
     flexDirection: 'row',
@@ -711,7 +754,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: radii.sm,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: colors.borderMuted,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.surface,
@@ -731,18 +774,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
     borderRadius: radii.sm,
-    backgroundColor: colors.surfaceHover,
+    backgroundColor: colors.primaryLight,
   },
   phaseOrderText: {
     ...typography.caption,
     fontSize: 10,
     fontWeight: '700',
-    color: colors.textSecondary,
+    color: colors.primary,
     textTransform: 'uppercase',
   },
   phaseName: {
-    ...typography.bodyMedium,
-    fontWeight: '600',
+    ...typography.label,
     color: colors.textPrimary,
     flexShrink: 1,
   },
@@ -753,7 +795,7 @@ const styles = StyleSheet.create({
   phaseDesc: {
     ...typography.caption,
     color: colors.textSecondary,
-    marginLeft: 32, // align past checkbox
+    marginLeft: 32,
   },
   phaseActionsRow: {
     flexDirection: 'row',
@@ -766,20 +808,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  actionIconPressed: {
+    backgroundColor: colors.surfaceHover,
+  },
   iconDisabled: {
     opacity: 0.3,
   },
   // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
     justifyContent: 'center',
     padding: spacing.base,
   },
   modalContent: {
     backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing.base,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
     gap: spacing.base,
     maxHeight: '85%',
   },
@@ -800,12 +845,11 @@ const styles = StyleSheet.create({
     color: colors.dangerText,
     backgroundColor: colors.dangerBg,
     padding: spacing.sm,
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
   },
   modalBtnRow: {
     flexDirection: 'row',
     gap: spacing.sm,
-    marginTop: spacing.xs,
   },
   modalBtn: {
     flex: 1,
@@ -815,15 +859,19 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   templateList: {
-    marginTop: spacing.xs,
+    flexGrow: 0,
   },
   templateCard: {
-    padding: spacing.base,
-    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
+    borderRadius: radii.lg,
+    padding: spacing.md,
     marginBottom: spacing.sm,
+    backgroundColor: colors.surfaceSubtle,
     gap: spacing.xs,
+  },
+  templateCardPressed: {
+    backgroundColor: colors.surfaceHover,
   },
   templateCardHeader: {
     flexDirection: 'row',
@@ -831,8 +879,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   templateCardTitle: {
-    ...typography.bodyMedium,
-    fontWeight: '700',
+    ...typography.label,
     color: colors.textPrimary,
   },
   templateCardDesc: {
@@ -840,13 +887,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   templatePhasesPreview: {
-    marginTop: spacing.xs,
-    paddingLeft: spacing.xs,
+    marginTop: 4,
     gap: 2,
   },
   templatePhaseItem: {
     ...typography.caption,
     fontSize: 11,
-    color: colors.textSecondary,
+    color: colors.textPrimary,
   },
 });

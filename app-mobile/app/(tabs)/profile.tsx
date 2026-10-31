@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Badge, Button, Card } from '@/components/ui';
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  IconTile,
+  ScreenHeader,
+  SectionHeader,
+  TabScreen,
+} from '@/components/ui';
 import { useAuth } from '@/features/auth';
-import { colors, radii, spacing, typography } from '@/theme';
+import { colors, spacing, typography } from '@/theme';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -38,30 +41,71 @@ export default function ProfileScreen() {
     );
   };
 
+  const displayName = profile?.full_name ?? user?.email ?? 'Student Member';
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      accessibilityRole="scrollview"
-    >
-      <View style={styles.header}>
-        <Text style={styles.title} accessibilityRole="header">
-          Profile & Account
-        </Text>
-        <Text style={styles.subtitle}>
-          Manage your student credentials and workspace session.
-        </Text>
-      </View>
+    <TabScreen>
+      <ScreenHeader
+        eyebrow="Settings"
+        title="Profile & Account"
+        subtitle="Manage your student credentials and workspace session."
+      />
+
+      {/* User Hero Card */}
+      <Card style={styles.heroCard}>
+        <View style={styles.avatarRow}>
+          <Avatar name={displayName} size={56} />
+          <View style={styles.avatarInfo}>
+            <Text style={styles.userName} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <Text style={styles.userEmail} numberOfLines={1}>
+              {user?.email ?? 'No active session'}
+            </Text>
+          </View>
+        </View>
+
+        {user ? (
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <View style={styles.detailLabelRow}>
+                <IconTile name="school-outline" tone="neutral" size={32} />
+                <Text style={styles.detailLabel}>University</Text>
+              </View>
+              <Text style={styles.detailValue} numberOfLines={1}>
+                {profile?.university ?? 'Not specified'}
+              </Text>
+            </View>
+            <View style={[styles.detailRow, styles.detailRowBorder]}>
+              <View style={styles.detailLabelRow}>
+                <IconTile name="book-outline" tone="neutral" size={32} />
+                <Text style={styles.detailLabel}>Department</Text>
+              </View>
+              <Text style={styles.detailValue} numberOfLines={1}>
+                {profile?.department ?? 'General'}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+      </Card>
 
       {/* Backend Connection Status */}
-      <Card style={styles.card}>
+      <SectionHeader title="Connection" />
+      <Card style={styles.statusCard}>
         <View style={styles.statusRow}>
-          <Text style={styles.statusLabel}>Backend Status</Text>
+          <View style={styles.statusTitleRow}>
+            <IconTile
+              name={isConfigured ? 'cloud-done-outline' : 'warning-outline'}
+              tone={isConfigured ? 'success' : 'warning'}
+              size={36}
+            />
+            <Text style={styles.statusLabel}>Backend Status</Text>
+          </View>
           {isConfigured ? (
             <Badge
               variant="success"
               label="Supabase Connected"
-              icon={<Ionicons name="cloud-done-outline" size={14} color={colors.successText} />}
+              icon={<Ionicons name="checkmark-circle" size={14} color={colors.successText} />}
             />
           ) : (
             <Badge
@@ -71,38 +115,6 @@ export default function ProfileScreen() {
             />
           )}
         </View>
-      </Card>
-
-      {/* User Information */}
-      <Card style={styles.card}>
-        <View style={styles.avatarRow}>
-          <View style={styles.avatarCircle}>
-            <Ionicons name="person" size={32} color={colors.primary} />
-          </View>
-          <View style={styles.avatarInfo}>
-            <Text style={styles.userName}>
-              {profile?.full_name ?? user?.email ?? 'Student Member'}
-            </Text>
-            <Text style={styles.userEmail}>{user?.email ?? 'No active session'}</Text>
-          </View>
-        </View>
-
-        {user ? (
-          <View style={styles.detailsContainer}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>University</Text>
-              <Text style={styles.detailValue}>
-                {profile?.university ?? 'Not specified'}
-              </Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Department</Text>
-              <Text style={styles.detailValue}>
-                {profile?.department ?? 'General'}
-              </Text>
-            </View>
-          </View>
-        ) : null}
       </Card>
 
       {/* Session Actions */}
@@ -126,64 +138,24 @@ export default function ProfileScreen() {
           />
         )}
       </View>
-    </ScrollView>
+    </TabScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.base,
-    paddingBottom: spacing.xxxl,
-  },
-  header: {
-    marginBottom: spacing.base,
-  },
-  title: {
-    ...typography.titleLarge,
-    color: colors.textPrimary,
-    marginBottom: spacing.xxs,
-  },
-  subtitle: {
-    ...typography.bodyMedium,
-    color: colors.textSecondary,
-  },
-  card: {
-    marginBottom: spacing.base,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  statusLabel: {
-    ...typography.bodyMedium,
-    fontWeight: '600',
-    color: colors.textPrimary,
+  heroCard: {
+    marginBottom: spacing.lg,
   },
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avatarCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.full,
-    backgroundColor: colors.primaryLight,
-    borderWidth: 1,
-    borderColor: colors.primaryBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
   avatarInfo: {
     flex: 1,
+    marginLeft: spacing.md,
   },
   userName: {
-    ...typography.titleSmall,
+    ...typography.titleMedium,
     color: colors.textPrimary,
     marginBottom: spacing.xxs,
   },
@@ -192,26 +164,56 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   detailsContainer: {
-    marginTop: spacing.md,
+    marginTop: spacing.base,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
+    borderTopColor: colors.divider,
+    paddingTop: spacing.xs,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  detailRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+  detailLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   detailLabel: {
-    ...typography.caption,
-    color: colors.textMuted,
+    ...typography.bodyMedium,
+    color: colors.textSecondary,
   },
   detailValue: {
-    ...typography.bodyMedium,
+    ...typography.label,
     color: colors.textPrimary,
-    fontWeight: '500',
+    marginLeft: spacing.md,
+    flexShrink: 1,
+  },
+  statusCard: {
+    marginBottom: spacing.lg,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  statusTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  statusLabel: {
+    ...typography.label,
+    color: colors.textPrimary,
   },
   actionSection: {
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
   },
 });

@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Button, Card, ErrorView, Input } from '@/components/ui';
+import { Button, Card, ErrorView, IconTile, Input } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { colors, radii, spacing, typography } from '@/theme';
 
@@ -78,6 +78,7 @@ export default function SignUpScreen() {
         accessibilityRole="scrollview"
       >
         <View style={styles.header}>
+          <IconTile name="person-add-outline" tone="primary" size={48} style={styles.brandTile} />
           <Text style={styles.title} accessibilityRole="header">
             Create Your Account
           </Text>
@@ -86,7 +87,7 @@ export default function SignUpScreen() {
           </Text>
         </View>
 
-        <Card style={styles.formCard}>
+        <Card style={styles.formCard} variant="elevated">
           {errorMessage ? (
             <ErrorView
               message={errorMessage}
@@ -98,7 +99,7 @@ export default function SignUpScreen() {
           {successMessage ? (
             <View style={styles.successCard} accessibilityRole="alert">
               <View style={styles.successHeader}>
-                <Ionicons name="checkmark-circle-outline" size={20} color={colors.success} />
+                <Ionicons name="checkmark-circle" size={20} color={colors.success} />
                 <Text style={styles.successTitle}>Registration Complete</Text>
               </View>
               <Text style={styles.successBody}>{successMessage}</Text>
@@ -111,6 +112,8 @@ export default function SignUpScreen() {
               />
             </View>
           ) : null}
+
+          <Text style={styles.groupLabel}>Student Profile</Text>
 
           <Input
             label="Full Name"
@@ -136,6 +139,8 @@ export default function SignUpScreen() {
             onChangeText={setDepartment}
             leftIcon={<Ionicons name="book-outline" size={18} color={colors.textSecondary} />}
           />
+
+          <Text style={[styles.groupLabel, styles.groupLabelSpaced]}>Credentials</Text>
 
           <Input
             label="Email Address"
@@ -174,7 +179,7 @@ export default function SignUpScreen() {
           <Button
             title="Sign In to Existing Account"
             onPress={() => router.back()}
-            variant="outline"
+            variant="secondary"
             size="md"
             style={styles.signInButton}
           />
@@ -191,23 +196,34 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: spacing.base,
-    paddingTop: spacing.base,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.xxxl,
   },
   header: {
-    marginBottom: spacing.base,
+    marginBottom: spacing.lg,
+  },
+  brandTile: {
+    marginBottom: spacing.md,
   },
   title: {
     ...typography.titleLarge,
     color: colors.textPrimary,
-    marginBottom: spacing.xxs,
+    marginBottom: spacing.xs,
   },
   subtitle: {
-    ...typography.bodyLarge,
+    ...typography.bodyMedium,
     color: colors.textSecondary,
   },
   formCard: {
     marginBottom: spacing.base,
+  },
+  groupLabel: {
+    ...typography.overline,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+  groupLabelSpaced: {
+    marginTop: spacing.xs,
   },
   banner: {
     marginBottom: spacing.base,
@@ -216,7 +232,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.successBg,
     borderColor: colors.successBorder,
     borderWidth: 1,
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     padding: spacing.md,
     marginBottom: spacing.base,
   },

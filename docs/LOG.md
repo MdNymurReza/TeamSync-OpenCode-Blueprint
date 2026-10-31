@@ -2,6 +2,131 @@
 
 Append newest entries at the top. Never fabricate results or erase history.
 
+## 2026-10-31 — Phase 8: Resource hub and private uploads
+- Gate before: `READY_FOR_REVIEW` (Phase 7 verified, Phase 8 explicitly authorized by user).
+- Scope: Schema and private storage migration (`supabase/migrations/20261031020000_resources_and_storage.sql`) for `public.resources` and the private `project-resources` Supabase Storage bucket with 10 MB size limit, MIME allowlist, `storage_object_project_id` helper, storage RLS policies (`SELECT`, `INSERT`, `DELETE`) restricted to active project members, and cross-project milestone/storage-path boundary trigger (`check_resource_integrity`); domain layer (`src/features/resources/`) with external URL validation (`validateExternalResourceUrl` blocking `javascript:`, `data:`, `file:` schemes), filename sanitization (`sanitizeStorageFileName`), project-scoped path builder (`buildProjectStoragePath`), cross-project storage boundary guard (`validateStoragePathProjectBoundary`), file size & MIME validation (`validateFileUploadConstraints`), private upload (`uploadFileResource`), and short-lived signed download URL generation (`createSignedDownloadUrl`); mobile Resource Hub screen (`app/projects/[id]/resources.tsx`) and Project Overview card (`app/projects/[id]/index.tsx`); 3 new test suites (41 total test suites, 163 total tests passing).
+- Changes:
+  - Created `supabase/migrations/20261031020000_resources_and_storage.sql` defining `public.resources`, `check_resource_integrity`, `public.resources` RLS policies, private `project-resources` bucket, `storage_object_project_id`, and `storage.objects` RLS policies.
+  - Updated `supabase/README.md` and `src/types/database.ts` with `resources`, `ResourceCategory`, and `ResourceType`.
+  - Created `src/features/resources/types.ts`, `src/features/resources/resourcesService.ts`, and `src/features/resources/index.ts`.
+  - Created `app/projects/[id]/resources.tsx` with category filter chips (`All`, `Research`, `Datasets`, `Design`, `Code & Repo`, `Reports`, `Slides & Demos`, `Custom`), external link creation, private file upload with MIME presets, milestone linking, and signed-URL download handling; registered route in `app/_layout.tsx`.
+  - Updated `app/projects/[id]/index.tsx` with a Resource Hub summary card and navigation link.
+  - Added tests in `tests/database/phase8_migrations.test.ts`, `tests/features/resources/resourcesService.test.ts`, and `tests/screens/ProjectResourcesScreen.test.tsx`.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (tsc, expo lint, and 41 test suites / 163 tests passed).
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed.
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen/Migration tests: 41 suites passed, 163 tests passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - Enforced architecture invariant *"Storage paths are not authorization by themselves"*: `storage.objects` RLS policies extract the `<project_id>` prefix via `public.storage_object_project_id(name)` and check `public.is_project_member(...)`, while `validateStoragePathProjectBoundary` and `check_resource_integrity` reject cross-project paths and `..` traversal.
+  - External URLs are validated at both the service layer (`validateExternalResourceUrl`) and DB constraint (`external_url ~* '^https?://.+'`), rejecting `javascript:`, `data:`, and `file:` schemes.
+  - File uploads enforce a 10 MB maximum size and an explicit academic/engineering MIME allowlist at both the client boundary and `storage.buckets`.
+- Limitations/blockers:
+  - Local Docker daemon remains unavailable; Phase 8 SQL migration must be applied to the remote Supabase project via the Dashboard SQL Editor.
+- Git diff review: Clean; user modifications in `app-mobile/app.json` and `app-mobile/assets/logo.png` preserved untouched; no secrets or unrelated files.
+- Memory/phase updates: Updated `docs/Memory.md`, `docs/Phases.md`, and `docs/LOG.md`.
+- Gate after: `VERIFIED` (Phase 8 completed; ready for Phase 9 authorization).
+- Next phase: Phase 9 (Activity, notifications, Team Pulse, search) — waiting for explicit user authorization.
+
+## 2026-10-31 — Phase 7: Meetings, minutes, decisions
+- Gate before: `READY_FOR_REVIEW` (Phase 6 verified, Phase 7 explicitly authorized by user).
+- Scope: Schema migration (`supabase/migrations/20261031010000_meetings_and_decisions.sql`) for `public.meetings`, `public.meeting_action_items`, and `public.decisions`, cross-project and membership integrity triggers (`check_meeting_phase_project`, `check_meeting_action_item_integrity`, `check_decision_integrity`), accepted-decision immutability trigger (`protect_decision_history`), idempotent RPC (`convert_action_item_to_task`), and strict RLS policies; domain layer (`src/features/meetings/` and `src/features/decisions/`) with UTC/ISO timezone parsing (`parseMeetingTimestamp`), time-range validation (`validateMeetingTimeRange`), idempotent action-item-to-task conversion (`convertActionItemToTask`), decision history protection (`validateDecisionMutation`), lineage resolution (`linkDecisionLineage`), and decision superseding (`supersedeDecision`); mobile screens (`app/projects/[id]/meetings/index.tsx` and `app/projects/[id]/decisions.tsx`); integration with Project Overview (`app/projects/[id]/index.tsx`) and Home Dashboard (`app/(tabs)/index.tsx`, `src/features/milestones/milestonesService.ts`); 5 new test suites (38 total test suites, 142 total tests passing).
+- Changes:
+  - Created `supabase/migrations/20261031010000_meetings_and_decisions.sql` defining `public.meetings`, `public.meeting_action_items`, and `public.decisions`, cross-project triggers, `protect_decision_history`, `convert_action_item_to_task`, and RLS policies.
+  - Updated `supabase/README.md` and `src/types/database.ts` with `meetings`, `meeting_action_items`, `decisions`, and `convert_action_item_to_task` types.
+  - Created `src/features/meetings/types.ts`, `src/features/meetings/meetingsService.ts`, and `src/features/meetings/index.ts`.
+  - Created `src/features/decisions/types.ts`, `src/features/decisions/decisionsService.ts`, and `src/features/decisions/index.ts`.
+  - Created `app/projects/[id]/meetings/index.tsx` (schedule/edit meeting modal, filter tabs, minutes & optional non-evaluative attendance editor, structured action items, and one-tap `"Convert to Task"` with `"Task Created"` badge) and `app/projects/[id]/decisions.tsx` (status filters, log decision modal, accept/reject proposed decisions, and `"Supersede / Revise"` flow with lineage badges); registered both routes in `app/_layout.tsx`.
+  - Updated `app/projects/[id]/index.tsx`, `src/features/milestones/types.ts`, `src/features/milestones/milestonesService.ts`, and `app/(tabs)/index.tsx` so Project Overview and Home Dashboard display upcoming meetings and recent decisions.
+  - Added tests in `tests/database/phase7_migrations.test.ts`, `tests/features/meetings/meetingsService.test.ts`, `tests/features/decisions/decisionsService.test.ts`, `tests/screens/ProjectMeetingsScreen.test.tsx`, and `tests/screens/ProjectDecisionsScreen.test.tsx`.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (tsc, expo lint, and 38 test suites / 142 tests passed).
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed.
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen/Migration tests: 38 suites passed, 142 tests passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - Cross-project integrity triggers prevent linking a meeting, action item, or decision to a phase, task, milestone, meeting, or superseded decision in another workspace, and enforce that action item assignees are active project members.
+  - `protect_decision_history` trigger and `validateDecisionMutation` prevent deleting or silently overwriting `'accepted'` or `'superseded'` decisions; changes require creating a superseding decision linked via `supersedes_id` / `superseded_by_id`.
+  - `convert_action_item_to_task` RPC (`FOR UPDATE` row lock) and `convertActionItemToTask` service check `converted_task_id` before creating a task so action items are never duplicated.
+  - Optional attendance (`attendee_ids`) is explicitly labeled for coordination only and is never used for member ranking or productivity scoring.
+- Limitations/blockers:
+  - Local Docker daemon remains unavailable; Phase 7 SQL migration must be applied to the remote Supabase project via the Dashboard SQL Editor.
+- Git diff review: Clean; user modifications in `app-mobile/app.json` and `app-mobile/assets/logo.png` preserved untouched; no secrets or unrelated files.
+- Memory/phase updates: Updated `docs/Memory.md`, `docs/Phases.md`, and `docs/LOG.md`.
+- Gate after: `VERIFIED` (Phase 7 completed; ready for Phase 8 authorization).
+- Next phase: Phase 8 (Resource hub and private uploads) — waiting for explicit user authorization.
+
+## 2026-10-31 — Phase 6: Milestones, timeline, dashboard & Input focus stability fix
+- Gate before: `READY_FOR_REVIEW` (Phase 5.5 verified, Phase 6 explicitly authorized by user).
+- Scope: Schema migration for `public.milestones`, linking `public.tasks.milestone_id` (`ON DELETE SET NULL`), cross-project phase/milestone integrity triggers, and RLS policies; domain layer (`src/features/milestones/`) with milestone CRUD, task-to-milestone linking, deterministic progress calculation (`computeMilestoneState` supporting `'auto'` from linked tasks vs `'manual'` percentage and manual status overrides, overdue detection, and 7-day deadline risk detection), and authoritative dashboard reconciliation (`reconcileDashboardSummary` & `fetchDashboardSummary`); Project Timeline & Milestones screen (`app/projects/[id]/milestones.tsx`); Milestones & Timeline card on Project Overview (`app/projects/[id]/index.tsx`); authoritative Home Dashboard (`app/(tabs)/index.tsx`); fix for cursor flickering/jumping among text boxes in `src/components/ui/Input.tsx`; 3 new test suites and updated Home/Task tests (33 total test suites, 114 total tests passing).
+- Changes:
+  - Created `supabase/migrations/20261031000000_milestones_and_timeline.sql` defining `public.milestones`, adding `milestone_id` to `public.tasks` (`ON DELETE SET NULL`), adding `check_milestone_phase_project` and `check_task_milestone_project` triggers, and enabling RLS with project membership policies.
+  - Updated `supabase/README.md` with the Phase 6 migration entry.
+  - Updated `src/types/database.ts`, `src/features/tasks/types.ts`, and `src/features/tasks/tasksService.ts` to support `milestones` and `tasks.milestone_id`.
+  - Created `src/features/milestones/types.ts`, `src/features/milestones/milestonesService.ts` (`computeMilestoneState`, `reconcileDashboardSummary`, `milestonesService`), and `src/features/milestones/index.ts`.
+  - Created `app/projects/[id]/milestones.tsx` with timeline filter tabs (`All`, `Upcoming`, `Overdue`, `Completed`), progress bar, deadline risk badges, manual status chips, create/edit modal, and task-linking modal; registered route in `app/_layout.tsx`.
+  - Updated `app/projects/[id]/index.tsx` to display a Milestones & Timeline overview card and route to `/projects/[id]/milestones`.
+  - Updated `app/(tabs)/index.tsx` to reconcile and render authoritative workspace metrics, assigned tasks, overdue counts, and upcoming milestones via `milestonesService.fetchDashboardSummary`.
+  - Fixed cursor flickering/jumping among `TextInput` fields in `src/components/ui/Input.tsx` by removing dynamic `...shadows.subtle` (`elevation: 1`) from `styles.inputFocused`, setting `collapsable={false}` on `inputContainer`, and only applying `numberOfLines` and `lineHeight` when `multiline` is `true`.
+  - Added tests in `tests/database/phase6_migrations.test.ts`, `tests/features/milestones/milestonesService.test.ts`, `tests/screens/ProjectMilestonesScreen.test.tsx`, and updated `tests/screens/HomeScreen.test.tsx` and `tests/features/tasks/tasksService.test.ts`.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (tsc, expo lint, and 33 test suites / 114 tests passed).
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed.
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen/Migration tests: 33 suites passed, 114 tests passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - Cross-project integrity triggers prevent linking a milestone to a phase from another project or linking a task to a milestone from another project.
+  - Deleting a milestone sets `tasks.milestone_id = NULL` (`ON DELETE SET NULL`), preserving all tasks.
+  - RLS policies restrict milestone viewing, creation, and updates to active project members, and deletion to the milestone creator or project admin/owner.
+- Limitations/blockers:
+  - Local Docker daemon remains unavailable; Phase 6 SQL migration must be applied to the remote Supabase project via the Dashboard SQL Editor.
+- Git diff review: Clean; user modifications in `app-mobile/app.json` and `app-mobile/assets/logo.png` preserved untouched; no secrets or unrelated files.
+- Memory/phase updates: Updated `docs/Memory.md`, `docs/Phases.md`, and `docs/LOG.md`.
+- Gate after: `VERIFIED` (Phase 6 completed; ready for Phase 7 authorization).
+- Next phase: Phase 7 (Meetings, minutes, decisions) — waiting for explicit user authorization.
+
+## 2026-10-31 — Phase 5.5: Visual polish & design system refinement
+- Gate before: `READY_FOR_REVIEW` (Phase 5 verified, Phase 5.5 explicitly authorized by user).
+- Scope: Visual design system refinement and full-screen UI polish across all implemented screens (`tokens.ts`, `navigation.ts`, shared UI components, Auth screens, Tab screens, and Project/Task stack screens) with zero new product features, schema changes, or domain logic alterations.
+- Changes:
+  - Refined `src/theme/tokens.ts` with `display`, `label`, and `overline` typography tokens, `divider` border token, `xxl` radius, softer card/raised shadow definitions, and deterministic WCAG AA `avatarPalette`.
+  - Created `src/theme/navigation.ts` (`stackScreenOptions`) for consistent hairline-free stack headers and exported via `src/theme/index.ts`.
+  - Refined `Button` (added `soft` variant, 12pt radius, subtle primary elevation), `Card` (16pt radius, subtle shadow, press scale feedback), `Badge` (balanced pill padding and letter-spacing), `Input` (52pt height, 12pt radius, focus elevation), `EmptyState` (80pt tinted icon circle), and `ErrorView` (clean surface card with danger icon circle and inline alert icon).
+  - Added reusable accessible UI primitives: `Avatar`, `IconTile`, `ProgressBar`, `ScreenHeader`, `SectionHeader`, and `TabScreen`, exported from `src/components/ui/index.ts`.
+  - Updated `app/_layout.tsx`, `app/(tabs)/_layout.tsx`, and `app/(auth)/_layout.tsx` to use unified header and safe-area-aware tab bar styling.
+  - Polished `app/(tabs)/index.tsx` (replaced stale Phase 1 developer status card with personalized greeting header, avatar, and real quick-action cards for creating/joining/browsing workspaces), `app/(tabs)/projects.tsx`, `app/(tabs)/activity.tsx`, and `app/(tabs)/profile.tsx`.
+  - Polished `app/(auth)/sign-in.tsx`, `app/(auth)/sign-up.tsx`, and `app/(auth)/reset-password.tsx` with brand `IconTile` headers, elevated form cards, and grouped field sections.
+  - Polished `app/projects/new.tsx`, `app/projects/join.tsx`, `app/projects/[id]/index.tsx`, `app/projects/[id]/members.tsx`, `app/projects/[id]/phases.tsx`, `app/projects/[id]/tasks/index.tsx`, `app/projects/[id]/tasks/new.tsx`, and `app/projects/[id]/tasks/[taskId].tsx` with `Avatar`, `IconTile`, `ProgressBar`, `SectionHeader`, pill filter chips, and `Pressable` feedback.
+  - Added `react-native-safe-area-context` Jest mock in `tests/setup.ts`, added unit tests in `tests/components/PolishPrimitives.test.tsx`, and updated `tests/screens/HomeScreen.test.tsx` and `tests/theme/tokens.test.ts`.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (tsc, expo lint, and 30 test suites passed).
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed.
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen/Migration tests: 30 suites passed, 98 tests passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - No domain services, Supabase queries, or RLS policies were modified.
+  - No dead buttons introduced; all quick actions on Home route to existing verified screens.
+- Manual/device checks:
+  - Android device/emulator check skipped (no Android SDK / Java installed locally).
+- Limitations/blockers:
+  - Local Docker and Android SDK remain unavailable on host machine.
+- Git diff review: Clean; user modifications in `app-mobile/app.json` and `app-mobile/assets/logo.png` preserved untouched; no secrets or unrelated files.
+- Memory/phase updates: Updated `docs/Memory.md`, `docs/Phases.md`, and `docs/LOG.md`.
+- Gate after: `VERIFIED` (Phase 5.5 completed; ready for Phase 6 authorization).
+- Next phase: Phase 6 (Milestones, timeline, dashboard) — waiting for explicit user authorization.
+
 ## 2026-10-30 — Phase 5: Task management
 - Gate before: `READY_FOR_REVIEW` (Phase 4 verified, Phase 5 explicitly authorized by user).
 - Scope: Schema migration for tasks, task_collaborators, task_checklist_items, and task_comments; triggers enforcing that primary assignee and collaborators must be active project members (`enforce_task_assignee_membership`, `enforce_task_collaborator_membership`); phase detachment on delete (`ON DELETE SET NULL`); RLS policies for project member visibility, creation, updates, and creator/admin deletion; domain layer types and `tasksService` with CRUD, status toggling, reopen behavior, in-memory overdue filtering, checklist item management, and comments; UI screens for task board (`app/projects/[id]/tasks/index.tsx`), task creation (`app/projects/[id]/tasks/new.tsx`), and task details (`app/projects/[id]/tasks/[taskId].tsx`); task overview card on project details screen; 5 new test suites (29 total test suites, 94 total tests passing).

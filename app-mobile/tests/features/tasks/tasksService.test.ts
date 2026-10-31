@@ -107,6 +107,7 @@ describe('tasksService', () => {
         due_date: null,
         start_date: null,
         phase_id: null,
+        milestone_id: null,
         created_by: 'user-123',
       });
       expect(mockInsertCollab).toHaveBeenCalledWith([

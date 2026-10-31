@@ -1,4 +1,5 @@
 import type {
+  Milestone,
   Profile,
   ProjectPhase,
   Task,
@@ -11,6 +12,7 @@ import type {
 export interface TaskWithDetails extends Task {
   primary_assignee?: Profile | null;
   phase?: ProjectPhase | null;
+  milestone?: Milestone | null;
   collaborators?: Profile[];
   checklist_total?: number;
   checklist_completed?: number;
@@ -25,6 +27,7 @@ export interface TaskFilterOptions {
   status?: TaskStatus;
   priority?: TaskPriority;
   phaseId?: string;
+  milestoneId?: string;
   assigneeId?: string;
   overdueOnly?: boolean;
   isArchived?: boolean;
@@ -38,6 +41,7 @@ export interface CreateTaskInput {
   due_date?: string | null;
   start_date?: string | null;
   phase_id?: string | null;
+  milestone_id?: string | null;
   collaborator_ids?: string[];
 }
 
@@ -50,6 +54,7 @@ export interface UpdateTaskInput {
   due_date?: string | null;
   start_date?: string | null;
   phase_id?: string | null;
+  milestone_id?: string | null;
   is_archived?: boolean;
 }
 
