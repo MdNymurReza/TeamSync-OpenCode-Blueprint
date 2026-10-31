@@ -1,8 +1,9 @@
 import { Redirect, Tabs } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors } from '@/theme';
+import { colors, radii, shadows } from '@/theme';
 import { useAuth } from '@/features/auth';
 import { LoadingView } from '@/components/ui';
 
@@ -11,11 +12,13 @@ type IconName = keyof typeof Ionicons.glyphMap;
 function tabIcon(active: IconName, inactive: IconName) {
   function TabBarIcon({ color, focused }: { color: unknown; focused: boolean }) {
     return (
-      <Ionicons
-        name={focused ? active : inactive}
-        size={24}
-        color={typeof color === 'string' ? color : colors.textMuted}
-      />
+      <View style={[styles.iconPill, focused && styles.iconPillActive]}>
+        <Ionicons
+          name={focused ? active : inactive}
+          size={22}
+          color={typeof color === 'string' ? color : colors.textMuted}
+        />
+      </View>
     );
   }
   return TabBarIcon;
@@ -33,6 +36,8 @@ export default function TabLayout() {
     return <Redirect href="/(auth)/sign-in" />;
   }
 
+  const bottomInset = Math.max(insets.bottom, 10);
+
   return (
     <Tabs
       screenOptions={{
@@ -45,14 +50,25 @@ export default function TabLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 60 + insets.bottom,
-          paddingBottom: Math.max(insets.bottom, 8),
-          paddingTop: 8,
-          elevation: 0,
+          height: 68 + bottomInset,
+          paddingBottom: bottomInset,
+          paddingTop: 6,
+          ...shadows.card,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 2,
+          justifyContent: 'center',
+        },
+        tabBarIconStyle: {
+          width: 48,
+          height: 28,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
+          fontSize: 11,
+          lineHeight: 15,
+          fontWeight: '700',
+          letterSpacing: 0.2,
+          marginTop: 2,
         },
       }}
     >
@@ -91,3 +107,16 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  iconPill: {
+    width: 44,
+    height: 26,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconPillActive: {
+    backgroundColor: colors.primaryLight,
+  },
+});

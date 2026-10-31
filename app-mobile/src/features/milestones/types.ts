@@ -69,11 +69,49 @@ export interface DashboardDecisionItem extends DecisionWithDetails {
   projectName: string;
 }
 
+export interface DashboardProjectProgressItem {
+  projectId: string;
+  projectName: string;
+  courseCode: string | null;
+  semester?: string | null;
+  targetDate?: string | null;
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  inReviewTasks?: number;
+  todoTasks?: number;
+  overdueTasks: number;
+  progressPercent: number;
+  totalMilestones?: number;
+  completedMilestones?: number;
+  overdueMilestones?: number;
+  upcomingMeetingsCount?: number;
+  decisionsCount?: number;
+  healthStatus?: 'on_track' | 'at_risk' | 'overdue' | 'completed';
+}
+
+export interface DashboardPriorityBreakdown {
+  urgent: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export interface DashboardStatusBreakdown {
+  todo: number;
+  in_progress: number;
+  in_review: number;
+  done: number;
+}
+
 export interface DashboardSummary {
   activeProjectCount: number;
   totalTasksCount: number;
   completedTasksCount: number;
   overallTaskProgressPercent: number;
+  statusBreakdown?: DashboardStatusBreakdown;
+  priorityBreakdown?: DashboardPriorityBreakdown;
+  projectProgress?: DashboardProjectProgressItem[];
   myAssignedTasks: DashboardTaskItem[];
   overdueTasks: DashboardTaskItem[];
   upcomingMilestones: DashboardMilestoneItem[];

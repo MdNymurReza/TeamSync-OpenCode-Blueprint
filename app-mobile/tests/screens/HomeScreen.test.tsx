@@ -169,8 +169,22 @@ describe('HomeScreen (Phase 6 Authoritative Dashboard)', () => {
     expect(screen.getByText('60% Complete')).toBeTruthy();
     expect(screen.getByText('6/10 tasks done')).toBeTruthy();
     expect(screen.getByText('1 Overdue')).toBeTruthy();
+    expect(screen.getByText('Task Distribution Graph')).toBeTruthy();
+    expect(screen.getByTestId('stacked-status-chart')).toBeTruthy();
     expect(screen.getByText('Submit IRB Ethics Form')).toBeTruthy();
     expect(screen.getByText('Dataset v1 Release')).toBeTruthy();
     expect(screen.getByText('At Risk')).toBeTruthy();
+
+    // Open the Full Project Report Modal and verify all report graphs & sections
+    const reportBtn = screen.getByTestId('open-project-report-button');
+    await fireEvent.press(reportBtn);
+
+    expect(await screen.findByTestId('full-project-report-modal')).toBeTruthy();
+    expect(screen.getByText('All Active Workspaces Report')).toBeTruthy();
+    expect(screen.getByText('Task Status Breakdown Chart')).toBeTruthy();
+    expect(screen.getByTestId('report-status-chart')).toBeTruthy();
+    expect(screen.getByText('Priority & Urgency Graph')).toBeTruthy();
+    expect(screen.getByTestId('report-priority-chart')).toBeTruthy();
+    expect(screen.getByText('Milestones & Governance Snapshot')).toBeTruthy();
   });
 });

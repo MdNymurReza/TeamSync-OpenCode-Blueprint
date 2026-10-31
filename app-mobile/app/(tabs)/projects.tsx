@@ -177,10 +177,12 @@ export default function ProjectsScreen() {
             return (
               <Card
                 key={project.id}
+                variant="elevated"
                 style={styles.projectCard}
                 onPress={() => router.push(`/projects/${project.id}` as Href)}
                 accessibilityLabel={`Project ${project.name}`}
               >
+                <View style={styles.projectAccentStripe} />
                 <View style={styles.projectCardHeader}>
                   <IconTile name={iconName} tone="primary" size={44} />
                   <View style={styles.projectCardTitleCol}>
@@ -265,6 +267,13 @@ const styles = StyleSheet.create({
   },
   projectCard: {
     padding: spacing.base,
+    overflow: 'hidden',
+  },
+  projectAccentStripe: {
+    height: 3,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+    marginBottom: spacing.sm,
   },
   projectCardHeader: {
     flexDirection: 'row',

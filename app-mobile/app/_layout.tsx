@@ -1,17 +1,16 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, View } from 'react-native';
 
-import { AuthProvider } from '@/features/auth';
-import { stackScreenOptions } from '@/theme';
+import { AnimatedSplashOverlay } from '@/components/ui';
+import { AuthProvider, useAuth } from '@/features/auth';
+import { colors, stackScreenOptions } from '@/theme';
 
-/**
- * Root Layout for MelBond.
- * Wraps the app in AuthProvider and hosts global navigation stacks.
- * Pushed screens share `stackScreenOptions` for a consistent header treatment.
- */
-export default function RootLayout() {
+function RootNavigator() {
+  const { isLoading } = useAuth();
+
   return (
-    <AuthProvider>
+    <View style={styles.root}>
       <StatusBar style="dark" />
       <Stack screenOptions={{ ...stackScreenOptions, headerShown: false }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
@@ -71,6 +70,27 @@ export default function RootLayout() {
         />
         <Stack.Screen name="+not-found" options={{ title: 'Not Found', headerShown: false }} />
       </Stack>
+
+      <AnimatedSplashOverlay isAppReady={!isLoading} />
+    </View>
+  );
+}
+
+/**
+ * Root Layout for MelBond.
+ * Wraps the app in AuthProvider and hosts global navigation stacks + animated splash screen.
+ */
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
     </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+});

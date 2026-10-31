@@ -7,9 +7,8 @@ export interface ProgressBarProps {
   /** Completed amount. */
   value: number;
   /** Total amount. A total of 0 renders an empty bar. */
-  total: number;
-  /** Accessible description, e.g. "Phases progress". */
   label: string;
+  total: number;
   tone?: 'primary' | 'success';
   height?: number;
   style?: StyleProp<ViewStyle>;
@@ -21,7 +20,7 @@ export function ProgressBar({
   total,
   label,
   tone = 'primary',
-  height = 6,
+  height = 8,
   style,
 }: ProgressBarProps) {
   const safeTotal = Math.max(0, total);
@@ -42,7 +41,7 @@ export function ProgressBar({
           {
             width: `${percent}%`,
             borderRadius: height / 2,
-            backgroundColor: tone === 'success' ? colors.success : colors.primary,
+            backgroundColor: tone === 'success' ? colors.brandMint : colors.primary,
           },
         ]}
       />
@@ -61,4 +60,3 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 });
-

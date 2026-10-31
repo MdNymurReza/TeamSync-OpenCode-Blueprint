@@ -336,6 +336,7 @@ export default function ProjectDetailsScreen() {
     >
       {/* Workspace Hero Card */}
       <Card style={styles.headerCard} variant="elevated">
+        <View style={styles.heroAccentBar} />
         <View style={styles.headerTop}>
           <Badge
             label={typeOpt?.label ?? project.project_type}
@@ -964,6 +965,13 @@ const styles = StyleSheet.create({
   },
   headerCard: {
     padding: spacing.base,
+    overflow: 'hidden',
+  },
+  heroAccentBar: {
+    height: 4,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+    marginBottom: spacing.sm,
   },
   headerTop: {
     flexDirection: 'row',

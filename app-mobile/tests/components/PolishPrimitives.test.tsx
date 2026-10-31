@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 
 import {
+  AnimatedSplashOverlay,
   Avatar,
   getAvatarColor,
   getInitials,
@@ -11,7 +12,7 @@ import {
   SectionHeader,
 } from '@/components/ui';
 
-describe('Phase 5.5 UI Polish Primitives', () => {
+describe('Phase 5.5 UI Polish Primitives & Animated Splash', () => {
   it('computes initials and deterministic avatar color', () => {
     expect(getInitials('Ada Lovelace')).toBe('AL');
     expect(getInitials('Single')).toBe('S');
@@ -51,5 +52,9 @@ describe('Phase 5.5 UI Polish Primitives', () => {
     expect(screen.getByText('Today')).toBeTruthy();
     expect(screen.getByText('3 items')).toBeTruthy();
   });
-});
 
+  it('skips blocking overlay in Jest environment by default', async () => {
+    await render(<AnimatedSplashOverlay isAppReady={true} testID="splash-test" />);
+    expect(screen.queryByTestId('splash-test')).toBeNull();
+  });
+});

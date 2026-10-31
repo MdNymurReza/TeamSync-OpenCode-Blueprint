@@ -31,11 +31,16 @@ export const colors = {
   textMuted: '#64748B',
   textInverse: '#FFFFFF',
 
-  // Brand Accent (Indigo)
+  // Brand Accent (Indigo + MelBond Navy/Teal Accent Harmony)
   primary: '#4F46E5',
   primaryDark: '#4338CA',
   primaryLight: '#EEF2FF',
   primaryBorder: '#C7D2FE',
+  brandNavy: '#0B1D45',
+  brandAzure: '#1D8EF8',
+  brandMint: '#1CC8A0',
+  brandMintBg: '#ECFDF5',
+  brandMintBorder: '#A7F3D0',
 
   // Semantic Statuses (WCAG AA compliant)
   success: '#16A34A',

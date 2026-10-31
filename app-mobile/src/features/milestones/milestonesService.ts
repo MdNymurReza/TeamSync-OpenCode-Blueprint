@@ -15,6 +15,9 @@ import type {
   DashboardDecisionItem,
   DashboardMeetingItem,
   DashboardMilestoneItem,
+  DashboardPriorityBreakdown,
+  DashboardProjectProgressItem,
+  DashboardStatusBreakdown,
   DashboardSummary,
   DashboardTaskItem,
   MilestoneComputedState,
@@ -148,6 +151,19 @@ export function reconcileDashboardSummary(params: {
 
   let totalTasksCount = 0;
   let completedTasksCount = 0;
+  const statusBreakdown: DashboardStatusBreakdown = {
+    todo: 0,
+    in_progress: 0,
+    in_review: 0,
+    done: 0,
+  };
+  const priorityBreakdown: DashboardPriorityBreakdown = {
+    urgent: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+  };
+  const projectProgress: DashboardProjectProgressItem[] = [];
   const myAssignedTasks: DashboardTaskItem[] = [];
   const overdueTasks: DashboardTaskItem[] = [];
   const upcomingMilestones: DashboardMilestoneItem[] = [];
@@ -156,11 +172,27 @@ export function reconcileDashboardSummary(params: {
 
   for (const project of activeProjects) {
     const projectTasks = (tasksByProject[project.id] ?? []).filter((t) => !t.is_archived);
+    let projDone = 0;
+    let projInProgress = 0;
+    let projInReview = 0;
+    let projTodo = 0;
+    let projOverdue = 0;
+
     for (const task of projectTasks) {
       totalTasksCount += 1;
+      statusBreakdown[task.status] = (statusBreakdown[task.status] ?? 0) + 1;
+      priorityBreakdown[task.priority] = (priorityBreakdown[task.priority] ?? 0) + 1;
+
       const isDone = task.status === 'done';
       if (isDone) {
         completedTasksCount += 1;
+        projDone += 1;
+      } else if (task.status === 'in_progress') {
+        projInProgress += 1;
+      } else if (task.status === 'in_review') {
+        projInReview += 1;
+      } else {
+        projTodo += 1;
       }
 
       const isOverdue = Boolean(task.due_date && task.due_date < nowIso && !isDone);
@@ -172,6 +204,7 @@ export function reconcileDashboardSummary(params: {
 
       if (isOverdue) {
         overdueTasks.push(dashboardTask);
+        projOverdue += 1;
       }
 
       if (currentUserId && task.primary_assignee_id === currentUserId && !isDone) {
@@ -180,8 +213,15 @@ export function reconcileDashboardSummary(params: {
     }
 
     const projectMilestones = milestonesByProject[project.id] ?? [];
+    let projCompletedMilestones = 0;
+    let projOverdueMilestones = 0;
+    let projAtRiskMilestones = 0;
     for (const ms of projectMilestones) {
-      if (ms.effectiveStatus !== 'completed') {
+      if (ms.effectiveStatus === 'completed') {
+        projCompletedMilestones += 1;
+      } else {
+        if (ms.isOverdue) projOverdueMilestones += 1;
+        if (ms.hasDeadlineRisk) projAtRiskMilestones += 1;
         upcomingMilestones.push({
           ...ms,
           projectName: project.name,
@@ -190,8 +230,10 @@ export function reconcileDashboardSummary(params: {
     }
 
     const projectMeetings = meetingsByProject[project.id] ?? [];
+    let projUpcomingMeetings = 0;
     for (const mtg of projectMeetings) {
       if (mtg.status === 'scheduled' && mtg.starts_at >= nowIso) {
+        projUpcomingMeetings += 1;
         upcomingMeetings.push({
           ...mtg,
           projectName: project.name,
@@ -200,14 +242,48 @@ export function reconcileDashboardSummary(params: {
     }
 
     const projectDecisions = decisionsByProject[project.id] ?? [];
+    let projActiveDecisions = 0;
     for (const dec of projectDecisions) {
       if (dec.status === 'accepted' || dec.status === 'proposed') {
+        projActiveDecisions += 1;
         recentDecisions.push({
           ...dec,
           projectName: project.name,
         });
       }
     }
+
+    const projTotal = projectTasks.length;
+    const projPercent = projTotal > 0 ? Math.round((projDone / projTotal) * 100) : 0;
+    const healthStatus: DashboardProjectProgressItem['healthStatus'] =
+      projTotal > 0 && projDone === projTotal && projOverdueMilestones === 0
+        ? 'completed'
+        : projOverdue > 0 || projOverdueMilestones > 0
+          ? 'overdue'
+          : projAtRiskMilestones > 0
+            ? 'at_risk'
+            : 'on_track';
+
+    projectProgress.push({
+      projectId: project.id,
+      projectName: project.name,
+      courseCode: project.course_code,
+      semester: project.semester,
+      targetDate: project.target_date,
+      totalTasks: projTotal,
+      completedTasks: projDone,
+      inProgressTasks: projInProgress + projInReview,
+      inReviewTasks: projInReview,
+      todoTasks: projTodo,
+      overdueTasks: projOverdue,
+      progressPercent: projPercent,
+      totalMilestones: projectMilestones.length,
+      completedMilestones: projCompletedMilestones,
+      overdueMilestones: projOverdueMilestones,
+      upcomingMeetingsCount: projUpcomingMeetings,
+      decisionsCount: projActiveDecisions,
+      healthStatus,
+    });
   }
 
   // Sort assigned tasks: overdue first, then earliest due_date, then highest priority
@@ -254,6 +330,9 @@ export function reconcileDashboardSummary(params: {
     totalTasksCount,
     completedTasksCount,
     overallTaskProgressPercent,
+    statusBreakdown,
+    priorityBreakdown,
+    projectProgress,
     myAssignedTasks,
     overdueTasks,
     upcomingMilestones,

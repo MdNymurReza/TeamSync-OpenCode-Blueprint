@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
-import { colors, spacing, typography } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 export interface ScreenHeaderProps {
   title: string;
@@ -18,7 +18,12 @@ export function ScreenHeader({ title, subtitle, eyebrow, accessory, style }: Scr
   return (
     <View style={[styles.container, style]}>
       <View style={styles.textCol}>
-        {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+        {eyebrow ? (
+          <View style={styles.eyebrowPill}>
+            <View style={styles.eyebrowDot} />
+            <Text style={styles.eyebrow}>{eyebrow}</Text>
+          </View>
+        ) : null}
         <Text style={styles.title} accessibilityRole="header">
           {title}
         </Text>
@@ -38,10 +43,28 @@ const styles = StyleSheet.create({
   textCol: {
     flex: 1,
   },
+  eyebrowPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primaryBorder,
+    borderWidth: 1,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    marginBottom: spacing.xs,
+    gap: 6,
+  },
+  eyebrowDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.brandMint,
+  },
   eyebrow: {
     ...typography.overline,
     color: colors.primary,
-    marginBottom: spacing.xs,
   },
   title: {
     ...typography.display,
@@ -56,4 +79,3 @@ const styles = StyleSheet.create({
     marginLeft: spacing.md,
   },
 });
-

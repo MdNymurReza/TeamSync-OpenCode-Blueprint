@@ -13,7 +13,7 @@ export interface CardProps {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
-  variant?: 'default' | 'elevated' | 'outlined';
+  variant?: 'default' | 'elevated' | 'outlined' | 'accent';
   accessibilityLabel?: string;
   testID?: string;
 }
@@ -74,7 +74,8 @@ const styles = StyleSheet.create({
   },
   pressed: {
     backgroundColor: colors.surfaceSubtle,
-    transform: [{ scale: 0.99 }],
+    borderColor: colors.primaryBorder,
+    transform: [{ scale: 0.985 }],
   },
   variant_default: {
     borderWidth: 1,
@@ -89,5 +90,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.divider,
     ...shadows.card,
+  },
+  variant_accent: {
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: colors.primaryBorder,
+    ...shadows.subtle,
   },
 });

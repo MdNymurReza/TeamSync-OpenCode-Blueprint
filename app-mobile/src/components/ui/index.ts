@@ -1,3 +1,4 @@
+export * from './AnimatedSplashOverlay';
 export * from './Avatar';
 export * from './Button';
 export * from './Badge';
@@ -10,4 +11,5 @@ export * from './Input';
 export * from './ProgressBar';
 export * from './ScreenHeader';
 export * from './SectionHeader';
+export * from './StackedStatusChart';
 export * from './TabScreen';

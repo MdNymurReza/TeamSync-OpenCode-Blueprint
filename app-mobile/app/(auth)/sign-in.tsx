@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,9 +12,11 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Button, Card, ErrorView, IconTile, Input } from '@/components/ui';
+import { Button, Card, ErrorView, Input } from '@/components/ui';
 import { useAuth } from '@/features/auth';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radii, shadows, spacing, typography } from '@/theme';
+
+const melbondLogo = require('../../assets/logo.png');
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -54,6 +57,9 @@ export default function SignInScreen() {
       style={styles.keyboardView}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <View pointerEvents="none" style={styles.ambientTopRight} />
+      <View pointerEvents="none" style={styles.ambientBottomLeft} />
+
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -63,8 +69,18 @@ export default function SignInScreen() {
         accessibilityRole="scrollview"
       >
         <View style={styles.header}>
-          <IconTile name="layers-outline" tone="primary" size={56} style={styles.brandTile} />
-          <Text style={styles.eyebrow}>MelBond</Text>
+          <View style={styles.brandLogoCard}>
+            <Image
+              source={melbondLogo}
+              style={styles.brandLogoImage}
+              resizeMode="contain"
+              accessibilityIgnoresInvertColors
+            />
+          </View>
+          <View style={styles.eyebrowPill}>
+            <View style={styles.eyebrowDot} />
+            <Text style={styles.eyebrow}>MelBond</Text>
+          </View>
           <Text style={styles.title} accessibilityRole="header">
             Welcome to MelBond
           </Text>
@@ -154,6 +170,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  ambientTopRight: {
+    position: 'absolute',
+    top: -100,
+    right: -70,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: '#E0F2FE',
+    opacity: 0.65,
+  },
+  ambientBottomLeft: {
+    position: 'absolute',
+    bottom: -90,
+    left: -80,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: '#CCFBF1',
+    opacity: 0.55,
+  },
   container: {
     padding: spacing.base,
     paddingBottom: spacing.xxxl,
@@ -162,13 +198,45 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: spacing.lg,
   },
-  brandTile: {
+  brandLogoCard: {
+    width: 84,
+    height: 84,
+    borderRadius: radii.xxl,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.primaryBorder,
     marginBottom: spacing.md,
+    ...shadows.card,
+  },
+  brandLogoImage: {
+    width: 68,
+    height: 68,
+  },
+  eyebrowPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primaryBorder,
+    borderWidth: 1,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    marginBottom: spacing.xs,
+    gap: 6,
+  },
+  eyebrowDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.brandMint,
   },
   eyebrow: {
     ...typography.overline,
     color: colors.primary,
-    marginBottom: spacing.xs,
   },
   title: {
     ...typography.display,
