@@ -44,11 +44,21 @@ jest.mock('react-native-safe-area-context', () =>
 jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn().mockResolvedValue({
     canceled: false,
-    assets: [{ uri: 'file:///test-gallery-image.jpg' }],
+    assets: [
+      {
+        uri: 'file:///test-gallery-image.jpg',
+        base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      },
+    ],
   }),
   launchCameraAsync: jest.fn().mockResolvedValue({
     canceled: false,
-    assets: [{ uri: 'file:///test-camera-image.jpg' }],
+    assets: [
+      {
+        uri: 'file:///test-camera-image.jpg',
+        base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      },
+    ],
   }),
   requestCameraPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
   requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),

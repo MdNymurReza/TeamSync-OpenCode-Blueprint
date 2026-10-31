@@ -45,6 +45,7 @@ export function Avatar({ name, avatarUrl, size = 40, style, testID }: AvatarProp
     (trimmedUrl.startsWith('https://') ||
       trimmedUrl.startsWith('http://') ||
       trimmedUrl.startsWith('file://') ||
+      trimmedUrl.startsWith('content://') ||
       trimmedUrl.startsWith('data:image/'));
 
   return (
