@@ -39,3 +39,31 @@ jest.mock('react-native-safe-area-context', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('react-native-safe-area-context/jest/mock').default
 );
+
+// Expo native pickers mocks
+jest.mock('expo-image-picker', () => ({
+  launchImageLibraryAsync: jest.fn().mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'file:///test-gallery-image.jpg' }],
+  }),
+  launchCameraAsync: jest.fn().mockResolvedValue({
+    canceled: false,
+    assets: [{ uri: 'file:///test-camera-image.jpg' }],
+  }),
+  requestCameraPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
+  requestMediaLibraryPermissionsAsync: jest.fn().mockResolvedValue({ granted: true }),
+}));
+
+jest.mock('expo-document-picker', () => ({
+  getDocumentAsync: jest.fn().mockResolvedValue({
+    canceled: false,
+    assets: [
+      {
+        uri: 'file:///test-picked-doc.pdf',
+        name: 'test-picked-doc.pdf',
+        mimeType: 'application/pdf',
+        size: 1048576,
+      },
+    ],
+  }),
+}));

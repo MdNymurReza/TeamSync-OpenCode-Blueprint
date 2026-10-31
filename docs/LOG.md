@@ -2,6 +2,18 @@
 
 Append newest entries at the top. Never fabricate results or erase history.
 
+## 2026-10-31 — Native Device File and Photo Pickers (`expo-image-picker` & `expo-document-picker`)
+- Scope: Enable native device media and document selection for profile pictures in Profile Studio and private team document uploads in the Resource Hub.
+- Changes:
+  - Installed `expo-image-picker` and `expo-document-picker` in `app-mobile/package.json`.
+  - Added global Jest mocks for `expo-image-picker` (`launchImageLibraryAsync`, `launchCameraAsync`, permissions) and `expo-document-picker` (`getDocumentAsync`) in `app-mobile/tests/setup.ts`.
+  - Integrated `expo-image-picker` into `app-mobile/app/(tabs)/profile.tsx`: added "Choose from Gallery" (`testID="pick-gallery-button"`) and "Take Photo with Camera" (`testID="take-photo-button"`) actions with camera and media library runtime permission checks, live circular avatar preview, and profile picture persistence.
+  - Integrated `expo-document-picker` into `app-mobile/app/projects/[id]/resources.tsx`: added "Pick Document from Device" (`testID="pick-document-button"`), automatic file metadata extraction (file name, MIME type, size validation against the 10 MB limit), picked file indicator pill with size formatting, and binary upload via `Uint8Array` to Supabase Storage.
+  - Added unit test in `app-mobile/tests/screens/ProjectResourcesScreen.test.tsx` for native document selection, file metadata auto-fill, and binary array buffer upload.
+  - Expanded `app-mobile/tests/screens/ProfileScreen.test.tsx` to verify native gallery and camera buttons and custom avatar persistence.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (`tsc --noEmit`, `expo lint`, and `jest --ci` — 46/46 test suites, 182/182 tests passed with 0 errors and 0 warnings).
+
 ## 2026-10-31 — Fix `unique_project_member` Constraint Conflict on Project Creation
 - Root Cause: In `create_project_with_owner`, an `INSERT INTO public.projects` fired the `AFTER INSERT` trigger `on_project_created_add_owner`, which immediately inserted `(project_id, user_id, 'owner')` into `public.project_members`. The subsequent statement in `create_project_with_owner` attempted a second insert into `public.project_members` without `ON CONFLICT DO NOTHING`, raising `duplicate key value violates unique constraint "unique_project_member"`.
 - Changes:

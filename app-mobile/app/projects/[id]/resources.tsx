@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import * as DocumentPicker from 'expo-document-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {
@@ -74,6 +75,12 @@ export default function ProjectResourcesScreen() {
   const [fileName, setFileName] = useState('architecture-notes.md');
   const [mimeType, setMimeType] = useState<string>('text/markdown');
   const [fileContent, setFileContent] = useState('');
+  const [pickedFile, setPickedFile] = useState<{
+    name: string;
+    size: number;
+    uri: string;
+    mimeType: string;
+  } | null>(null);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -163,8 +170,38 @@ export default function ProjectResourcesScreen() {
     setFileName('architecture-notes.md');
     setMimeType('text/markdown');
     setFileContent('');
+    setPickedFile(null);
     setFormError(null);
     setIsModalVisible(true);
+  };
+
+  const handlePickDocument = async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({
+        copyToCacheDirectory: true,
+        type: ['application/pdf', 'text/*', 'application/json', 'image/*', '*/*'],
+      });
+
+      if (!res.canceled && res.assets && res.assets[0]) {
+        const asset = res.assets[0];
+        setPickedFile({
+          name: asset.name,
+          size: asset.size ?? 0,
+          uri: asset.uri,
+          mimeType: asset.mimeType ?? 'application/pdf',
+        });
+        setFileName(asset.name);
+        if (asset.mimeType) {
+          setMimeType(asset.mimeType);
+        }
+        if (!title.trim() && asset.name) {
+          setTitle(asset.name.replace(/\.[^/.]+$/, ''));
+        }
+        setFormError(null);
+      }
+    } catch {
+      setFormError('Could not open document picker on device.');
+    }
   };
 
   const handleSaveResource = async () => {
@@ -195,11 +232,22 @@ export default function ProjectResourcesScreen() {
         fetchData();
       }
     } else {
+      let uploadContent: string | Uint8Array = fileContent || (pickedFile ? `[Uploaded file: ${pickedFile.name}]` : '');
+      if (pickedFile?.uri) {
+        try {
+          const resp = await fetch(pickedFile.uri);
+          const buf = await resp.arrayBuffer();
+          uploadContent = new Uint8Array(buf);
+        } catch {
+          // Keep string fallback
+        }
+      }
+
       const { error } = await resourcesService.uploadFileResource(id, {
         title: title.trim(),
         fileName: fileName.trim(),
         mimeType,
-        content: fileContent,
+        content: uploadContent,
         category,
         custom_category: category === 'other' ? customCategory.trim() || null : null,
         description: description.trim() || null,
@@ -612,6 +660,25 @@ export default function ProjectResourcesScreen() {
                 />
               ) : (
                 <>
+                  <View style={styles.nativeDocPickBox}>
+                    <Button
+                      testID="pick-document-button"
+                      title={pickedFile ? 'Change Selected File' : 'Pick Document from Device'}
+                      variant="soft"
+                      size="md"
+                      leftIcon={<Ionicons name="document-attach-outline" size={18} color={colors.primaryDark} />}
+                      onPress={handlePickDocument}
+                    />
+                    {pickedFile ? (
+                      <View style={styles.pickedFileNotice}>
+                        <Ionicons name="checkmark-circle" size={16} color={colors.brandMint} />
+                        <Text style={styles.pickedFileNameText} numberOfLines={1}>
+                          {pickedFile.name} ({formatFileSize(pickedFile.size)})
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+
                   <Input
                     label="File Name *"
                     placeholder="notes.md"
@@ -950,6 +1017,27 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.dangerText,
     marginBottom: spacing.sm,
+  },
+  nativeDocPickBox: {
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  pickedFileNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: colors.primaryBorder,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  pickedFileNameText: {
+    ...typography.caption,
+    color: colors.textPrimary,
+    fontWeight: '700',
+    flex: 1,
   },
   modalSection: {
     marginBottom: spacing.md,

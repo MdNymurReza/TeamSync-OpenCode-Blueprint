@@ -32,10 +32,13 @@ describe('ProfileScreen (Professional Student Profile, Avatar Upload & Settings)
       </AuthProvider>
     );
 
-    // 1. Open Profile Picture Upload Studio modal and choose a portrait preset
+    // 1. Open Profile Picture Upload Studio modal, verify gallery/camera buttons, and choose preset
     await fireEvent.press(screen.getByTestId('upload-profile-photo-button'));
     expect(await screen.findByTestId('avatar-upload-modal')).toBeTruthy();
+    expect(screen.getByTestId('pick-gallery-button')).toBeTruthy();
+    expect(screen.getByTestId('take-photo-button')).toBeTruthy();
 
+    await fireEvent.press(screen.getByTestId('pick-gallery-button'));
     await fireEvent.press(screen.getByTestId('avatar-preset-scholar-azure'));
     await fireEvent.press(screen.getByTestId('save-avatar-button'));
 

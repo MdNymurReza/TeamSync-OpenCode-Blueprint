@@ -240,5 +240,45 @@ describe('ProjectResourcesScreen', () => {
       );
     });
   });
+
+  it('picks a native document using expo-document-picker and populates file details', async () => {
+    // Mock global fetch for arrayBuffer upload
+    const mockArrayBuffer = new Uint8Array([1, 2, 3]).buffer;
+    global.fetch = jest.fn().mockResolvedValue({
+      arrayBuffer: jest.fn().mockResolvedValue(mockArrayBuffer),
+    }) as jest.Mock;
+
+    (resourcesService.uploadFileResource as jest.Mock).mockResolvedValue({
+      data: { id: 'res-5', title: 'test-picked-doc.pdf' },
+      error: null,
+    });
+
+    await render(<ProjectResourcesScreen />);
+
+    const uploadBtn = await screen.findByRole('button', {
+      name: 'Upload private project file',
+    });
+    await fireEvent.press(uploadBtn);
+
+    const pickDocBtn = screen.getByTestId('pick-document-button');
+    await fireEvent.press(pickDocBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('test-picked-doc.pdf (1.00 MB)')).toBeTruthy();
+    });
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Upload File' }));
+
+    await waitFor(() => {
+      expect(resourcesService.uploadFileResource).toHaveBeenCalledWith(
+        'proj-1',
+        expect.objectContaining({
+          title: 'test-picked-doc',
+          fileName: 'test-picked-doc.pdf',
+          mimeType: 'application/pdf',
+        })
+      );
+    });
+  });
 });
 

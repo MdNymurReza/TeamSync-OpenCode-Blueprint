@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {
@@ -259,6 +260,53 @@ export default function ProfileScreen() {
     setAvatarDraftUrl(effectiveAvatarUrl ?? '');
     setAvatarUploadError(null);
     setIsAvatarModalOpen(true);
+  };
+
+  const handlePickFromLibrary = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        setAvatarUploadError('Photo library permission is required to choose a profile photo.');
+        return;
+      }
+
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+
+      if (!res.canceled && res.assets && res.assets[0]?.uri) {
+        setAvatarDraftUrl(res.assets[0].uri);
+        setAvatarUploadError(null);
+      }
+    } catch {
+      setAvatarUploadError('Could not open device photo library.');
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        setAvatarUploadError('Camera permission is required to take a profile picture.');
+        return;
+      }
+
+      const res = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+
+      if (!res.canceled && res.assets && res.assets[0]?.uri) {
+        setAvatarDraftUrl(res.assets[0].uri);
+        setAvatarUploadError(null);
+      }
+    } catch {
+      setAvatarUploadError('Could not open camera.');
+    }
   };
 
   const handleSaveAvatarPhoto = async (overrideUrl?: string | null) => {
@@ -676,6 +724,28 @@ export default function ProfileScreen() {
                   <Text style={styles.errorAlertText}>{avatarUploadError}</Text>
                 </View>
               ) : null}
+
+              {/* Native Device Photo Library & Camera Actions */}
+              <View style={styles.nativePickRow}>
+                <Button
+                  testID="pick-gallery-button"
+                  title="Photo Library"
+                  variant="soft"
+                  size="md"
+                  style={styles.nativePickBtn}
+                  leftIcon={<Ionicons name="images-outline" size={18} color={colors.primaryDark} />}
+                  onPress={handlePickFromLibrary}
+                />
+                <Button
+                  testID="take-photo-button"
+                  title="Take Photo"
+                  variant="soft"
+                  size="md"
+                  style={styles.nativePickBtn}
+                  leftIcon={<Ionicons name="camera-outline" size={18} color={colors.primaryDark} />}
+                  onPress={handleTakePhoto}
+                />
+              </View>
 
               {/* Upload via Photo URL */}
               <Input
@@ -1162,6 +1232,13 @@ const styles = StyleSheet.create({
   errorAlertText: {
     ...typography.caption,
     color: colors.dangerText,
+    flex: 1,
+  },
+  nativePickRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  nativePickBtn: {
     flex: 1,
   },
   presetSectionTitle: {
