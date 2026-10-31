@@ -24,11 +24,13 @@ import {
   SectionHeader,
   StackedStatusChart,
   TabScreen,
+  TeammateCircleChart,
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import {
   DashboardProjectProgressItem,
   DashboardSummary,
+  DashboardTeammateWorkloadItem,
   milestonesService,
 } from '@/features/milestones';
 import { colors, radii, shadows, spacing, touchTargets, typography } from '@/theme';
@@ -305,6 +307,44 @@ export default function HomeScreen() {
     selectedReportProjectId === 'all'
       ? recentDecisions
       : recentDecisions.filter((d) => d.project_id === selectedReportProjectId);
+
+  const rawTeammates = selectedProjectReport
+    ? selectedProjectReport.teammateWorkloads
+    : summary?.teammateWorkloads;
+
+  const reportTeammates: DashboardTeammateWorkloadItem[] =
+    rawTeammates && rawTeammates.length > 0
+      ? rawTeammates
+      : reportTotalTasks > 0
+        ? [
+            {
+              userId: user?.id ?? 'user-current',
+              displayName: displayName || 'You',
+              roleLabel: 'You',
+              totalTasks: reportCompletedTasks + assignedTasks.length,
+              completedTasks: reportCompletedTasks,
+              inProgressTasks: assignedTasks.filter((t) => t.status === 'in_progress').length,
+              inReviewTasks: assignedTasks.filter((t) => t.status === 'in_review').length,
+              todoTasks: assignedTasks.filter((t) => t.status === 'todo').length,
+              overdueTasks: assignedTasks.filter((t) => t.isOverdue).length,
+              activeWorkloadTasks: assignedTasks.length,
+              completionPercent:
+                reportCompletedTasks + assignedTasks.length > 0
+                  ? Math.round(
+                      (reportCompletedTasks /
+                        (reportCompletedTasks + assignedTasks.length)) *
+                        100
+                    )
+                  : 0,
+              workloadSharePercent:
+                reportTotalTasks > 0
+                  ? Math.round(
+                      ((reportCompletedTasks + assignedTasks.length) / reportTotalTasks) * 100
+                    )
+                  : 0,
+            },
+          ]
+        : [];
 
   return (
     <TabScreen
@@ -879,7 +919,23 @@ export default function HomeScreen() {
                 </View>
               </Card>
 
-              {/* 2. Task Status Distribution Chart */}
+              {/* 2. Teammate-Wise Circle Chart, Working Load & Completed Tasks */}
+              <Card style={styles.reportCard}>
+                <Text style={styles.reportCardTitle}>
+                  Teammate Circle Chart & Working Load
+                </Text>
+                <Text style={styles.reportCardSub}>
+                  Circular completion gauge, active working load, and completed tasks per teammate
+                </Text>
+                <TeammateCircleChart
+                  testID="report-teammate-circle-chart"
+                  teammates={reportTeammates}
+                  totalTasks={reportTotalTasks}
+                  completedTasks={reportCompletedTasks}
+                />
+              </Card>
+
+              {/* 3. Task Status Distribution Chart */}
               <Card style={styles.reportCard}>
                 <Text style={styles.reportCardTitle}>Task Status Breakdown Chart</Text>
                 <Text style={styles.reportCardSub}>

@@ -13,3 +13,4 @@ export * from './ScreenHeader';
 export * from './SectionHeader';
 export * from './StackedStatusChart';
 export * from './TabScreen';
+export * from './TeammateCircleChart';

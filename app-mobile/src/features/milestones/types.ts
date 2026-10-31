@@ -69,6 +69,21 @@ export interface DashboardDecisionItem extends DecisionWithDetails {
   projectName: string;
 }
 
+export interface DashboardTeammateWorkloadItem {
+  userId: string;
+  displayName: string;
+  roleLabel?: string | null;
+  totalTasks: number;
+  completedTasks: number;
+  inProgressTasks: number;
+  inReviewTasks: number;
+  todoTasks: number;
+  overdueTasks: number;
+  activeWorkloadTasks: number;
+  completionPercent: number;
+  workloadSharePercent: number;
+}
+
 export interface DashboardProjectProgressItem {
   projectId: string;
   projectName: string;
@@ -88,6 +103,7 @@ export interface DashboardProjectProgressItem {
   upcomingMeetingsCount?: number;
   decisionsCount?: number;
   healthStatus?: 'on_track' | 'at_risk' | 'overdue' | 'completed';
+  teammateWorkloads?: DashboardTeammateWorkloadItem[];
 }
 
 export interface DashboardPriorityBreakdown {
@@ -112,6 +128,7 @@ export interface DashboardSummary {
   statusBreakdown?: DashboardStatusBreakdown;
   priorityBreakdown?: DashboardPriorityBreakdown;
   projectProgress?: DashboardProjectProgressItem[];
+  teammateWorkloads?: DashboardTeammateWorkloadItem[];
   myAssignedTasks: DashboardTaskItem[];
   overdueTasks: DashboardTaskItem[];
   upcomingMilestones: DashboardMilestoneItem[];

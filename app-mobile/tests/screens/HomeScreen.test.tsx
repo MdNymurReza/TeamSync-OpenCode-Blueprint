@@ -181,6 +181,10 @@ describe('HomeScreen (Phase 6 Authoritative Dashboard)', () => {
 
     expect(await screen.findByTestId('full-project-report-modal')).toBeTruthy();
     expect(screen.getByText('All Active Workspaces Report')).toBeTruthy();
+    expect(screen.getByText('Teammate Circle Chart & Working Load')).toBeTruthy();
+    expect(screen.getByTestId('report-teammate-circle-chart')).toBeTruthy();
+    expect(screen.getByText('Completed: 6/7')).toBeTruthy();
+    expect(screen.getByText('Working Load: 1')).toBeTruthy();
     expect(screen.getByText('Task Status Breakdown Chart')).toBeTruthy();
     expect(screen.getByTestId('report-status-chart')).toBeTruthy();
     expect(screen.getByText('Priority & Urgency Graph')).toBeTruthy();

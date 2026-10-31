@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   ActivityIndicator,
-  Animated,
   Pressable,
   StyleProp,
   StyleSheet,
@@ -54,34 +53,6 @@ export function Button({
   accessibilityHint,
 }: ButtonProps) {
   const isInteractive = !disabled && !loading;
-  const isTestEnv = process.env.NODE_ENV === 'test';
-  const [scaleAnim] = useState(() => new Animated.Value(1));
-
-  useEffect(() => {
-    return () => {
-      scaleAnim.stopAnimation();
-    };
-  }, [scaleAnim]);
-
-  const handlePressIn = () => {
-    if (!isInteractive || isTestEnv) return;
-    Animated.spring(scaleAnim, {
-      toValue: 0.965,
-      friction: 7,
-      tension: 180,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    if (!isInteractive || isTestEnv) return;
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 6,
-      tension: 160,
-      useNativeDriver: true,
-    }).start();
-  };
 
   const getContainerStyle = ({ pressed }: { pressed: boolean }): ViewStyle[] => {
     const list: ViewStyle[] = [
@@ -91,7 +62,7 @@ export function Button({
     ];
 
     if (pressed && isInteractive) {
-      list.push(styles[`pressed_${variant}`]);
+      list.push(styles.pressedScale, styles[`pressed_${variant}`]);
     }
 
     if (!isInteractive) {
@@ -128,8 +99,6 @@ export function Button({
       testID={testID}
       disabled={!isInteractive}
       onPress={isInteractive ? onPress : undefined}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityHint={accessibilityHint}
@@ -139,27 +108,20 @@ export function Button({
       }}
       style={({ pressed }) => [getContainerStyle({ pressed }), style]}
     >
-      <Animated.View
-        style={[
-          styles.animatedContent,
-          !isTestEnv && { transform: [{ scale: scaleAnim }] },
-        ]}
-      >
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={indicatorColor} />
-            <Text style={[getTextStyle(), styles.loadingText, textStyle]}>
-              {title}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.contentContainer}>
-            {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
-            <Text style={[getTextStyle(), textStyle]}>{title}</Text>
-            {rightIcon ? <View style={styles.iconRight}>{rightIcon}</View> : null}
-          </View>
-        )}
-      </Animated.View>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color={indicatorColor} />
+          <Text style={[getTextStyle(), styles.loadingText, textStyle]}>
+            {title}
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.contentContainer}>
+          {leftIcon ? <View style={styles.iconLeft}>{leftIcon}</View> : null}
+          <Text style={[getTextStyle(), textStyle]}>{title}</Text>
+          {rightIcon ? <View style={styles.iconRight}>{rightIcon}</View> : null}
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -172,10 +134,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
   },
-  animatedContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  pressedScale: {
+    transform: [{ scale: 0.98 }],
   },
   contentContainer: {
     flexDirection: 'row',

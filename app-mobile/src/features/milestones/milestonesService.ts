@@ -6,7 +6,11 @@ import type {
   Task,
   TaskPriority,
 } from '@/types/database';
-import { projectsService, type ProjectWithRole } from '@/features/projects';
+import {
+  projectsService,
+  type ProjectMemberWithProfile,
+  type ProjectWithRole,
+} from '@/features/projects';
 import { tasksService, type TaskWithDetails } from '@/features/tasks';
 import { meetingsService, type MeetingWithDetails } from '@/features/meetings';
 import { decisionsService, type DecisionWithDetails } from '@/features/decisions';
@@ -20,6 +24,7 @@ import type {
   DashboardStatusBreakdown,
   DashboardSummary,
   DashboardTaskItem,
+  DashboardTeammateWorkloadItem,
   MilestoneComputedState,
   MilestoneEffectiveStatus,
   MilestoneTimelineFilter,
@@ -123,6 +128,39 @@ export function computeMilestoneState(
   };
 }
 
+function finalizeTeammateWorkloads(
+  accMap: Map<string, Omit<DashboardTeammateWorkloadItem, 'completionPercent' | 'workloadSharePercent'>>,
+  scopeTotalTasks: number
+): DashboardTeammateWorkloadItem[] {
+  const list: DashboardTeammateWorkloadItem[] = [];
+  for (const item of accMap.values()) {
+    // Only include 'unassigned' when there are actually unassigned tasks
+    if (item.userId === 'unassigned' && item.totalTasks === 0) {
+      continue;
+    }
+    const completionPercent =
+      item.totalTasks > 0 ? Math.round((item.completedTasks / item.totalTasks) * 100) : 0;
+    const workloadSharePercent =
+      scopeTotalTasks > 0 ? Math.round((item.totalTasks / scopeTotalTasks) * 100) : 0;
+
+    list.push({
+      ...item,
+      completionPercent,
+      workloadSharePercent,
+    });
+  }
+
+  // Sort by totalTasks desc (unassigned last), then displayName asc
+  list.sort((a, b) => {
+    if (a.userId === 'unassigned' && b.userId !== 'unassigned') return 1;
+    if (b.userId === 'unassigned' && a.userId !== 'unassigned') return -1;
+    if (b.totalTasks !== a.totalTasks) return b.totalTasks - a.totalTasks;
+    return a.displayName.localeCompare(b.displayName);
+  });
+
+  return list;
+}
+
 /**
  * Pure reconciliation of dashboard metrics from authoritative workspace, task,
  * and milestone records (PRD FR-10).
@@ -133,6 +171,7 @@ export function reconcileDashboardSummary(params: {
   milestonesByProject: Record<string, MilestoneWithDetails[]>;
   meetingsByProject?: Record<string, MeetingWithDetails[]>;
   decisionsByProject?: Record<string, DecisionWithDetails[]>;
+  membersByProject?: Record<string, ProjectMemberWithProfile[]>;
   currentUserId?: string | null;
   nowIso?: string;
 }): DashboardSummary {
@@ -142,6 +181,7 @@ export function reconcileDashboardSummary(params: {
     milestonesByProject,
     meetingsByProject = {},
     decisionsByProject = {},
+    membersByProject = {},
     currentUserId,
     nowIso = new Date().toISOString(),
   } = params;
@@ -170,8 +210,62 @@ export function reconcileDashboardSummary(params: {
   const upcomingMeetings: DashboardMeetingItem[] = [];
   const recentDecisions: DashboardDecisionItem[] = [];
 
+  type MutableWorkload = Omit<
+    DashboardTeammateWorkloadItem,
+    'completionPercent' | 'workloadSharePercent'
+  >;
+  const globalTeammateMap = new Map<string, MutableWorkload>();
+
+  const ensureTeammateEntry = (
+    map: Map<string, MutableWorkload>,
+    userId: string,
+    displayName: string,
+    roleLabel?: string | null
+  ): MutableWorkload => {
+    const existing = map.get(userId);
+    if (existing) {
+      if (
+        (existing.displayName === 'Teammate' || existing.displayName === 'You') &&
+        displayName !== 'Teammate'
+      ) {
+        existing.displayName = displayName;
+      }
+      if (!existing.roleLabel && roleLabel) {
+        existing.roleLabel = roleLabel;
+      }
+      return existing;
+    }
+    const created: MutableWorkload = {
+      userId,
+      displayName,
+      roleLabel: roleLabel ?? null,
+      totalTasks: 0,
+      completedTasks: 0,
+      inProgressTasks: 0,
+      inReviewTasks: 0,
+      todoTasks: 0,
+      overdueTasks: 0,
+      activeWorkloadTasks: 0,
+    };
+    map.set(userId, created);
+    return created;
+  };
+
   for (const project of activeProjects) {
     const projectTasks = (tasksByProject[project.id] ?? []).filter((t) => !t.is_archived);
+    const projectMembers = membersByProject[project.id] ?? [];
+    const projTeammateMap = new Map<string, MutableWorkload>();
+
+    for (const member of projectMembers) {
+      const memberName =
+        member.profile?.full_name?.trim() ||
+        member.profile?.email?.split('@')[0] ||
+        (currentUserId && member.user_id === currentUserId ? 'You' : 'Teammate');
+      const roleTitle = member.role;
+      ensureTeammateEntry(projTeammateMap, member.user_id, memberName, roleTitle);
+      ensureTeammateEntry(globalTeammateMap, member.user_id, memberName, roleTitle);
+    }
+
     let projDone = 0;
     let projInProgress = 0;
     let projInReview = 0;
@@ -209,6 +303,53 @@ export function reconcileDashboardSummary(params: {
 
       if (currentUserId && task.primary_assignee_id === currentUserId && !isDone) {
         myAssignedTasks.push(dashboardTask);
+      }
+
+      // Attribute task to primary assignee (or Unassigned bucket)
+      const assigneeId = task.primary_assignee_id ?? 'unassigned';
+      const assigneeName =
+        assigneeId === 'unassigned'
+          ? 'Unassigned'
+          : task.primary_assignee?.full_name?.trim() ||
+            task.primary_assignee?.email?.split('@')[0] ||
+            (currentUserId && assigneeId === currentUserId ? 'You' : `Teammate`);
+      const assigneeRole =
+        assigneeId === 'unassigned'
+          ? 'Open Queue'
+          : currentUserId && assigneeId === currentUserId
+            ? 'You'
+            : 'Member';
+
+      const projEntry = ensureTeammateEntry(
+        projTeammateMap,
+        assigneeId,
+        assigneeName,
+        assigneeRole
+      );
+      const globalEntry = ensureTeammateEntry(
+        globalTeammateMap,
+        assigneeId,
+        assigneeName,
+        assigneeRole
+      );
+
+      for (const entry of [projEntry, globalEntry]) {
+        entry.totalTasks += 1;
+        if (isDone) {
+          entry.completedTasks += 1;
+        } else {
+          entry.activeWorkloadTasks += 1;
+          if (task.status === 'in_progress') {
+            entry.inProgressTasks += 1;
+          } else if (task.status === 'in_review') {
+            entry.inReviewTasks += 1;
+          } else {
+            entry.todoTasks += 1;
+          }
+          if (isOverdue) {
+            entry.overdueTasks += 1;
+          }
+        }
       }
     }
 
@@ -283,6 +424,7 @@ export function reconcileDashboardSummary(params: {
       upcomingMeetingsCount: projUpcomingMeetings,
       decisionsCount: projActiveDecisions,
       healthStatus,
+      teammateWorkloads: finalizeTeammateWorkloads(projTeammateMap, projTotal),
     });
   }
 
@@ -333,6 +475,7 @@ export function reconcileDashboardSummary(params: {
     statusBreakdown,
     priorityBreakdown,
     projectProgress,
+    teammateWorkloads: finalizeTeammateWorkloads(globalTeammateMap, totalTasksCount),
     myAssignedTasks,
     overdueTasks,
     upcomingMilestones,
@@ -546,23 +689,29 @@ export const milestonesService = {
       const milestonesByProject: Record<string, MilestoneWithDetails[]> = {};
       const meetingsByProject: Record<string, MeetingWithDetails[]> = {};
       const decisionsByProject: Record<string, DecisionWithDetails[]> = {};
+      const membersByProject: Record<string, ProjectMemberWithProfile[]> = {};
 
       await Promise.all(
         activeProjects.map(async (project) => {
-          const [tasksRes, milestonesRes, meetingsRes, decisionsRes] = await Promise.all([
-            tasksService.fetchProjectTasks(project.id),
-            this.fetchProjectMilestones(project.id),
-            meetingsService?.fetchProjectMeetings
-              ? meetingsService.fetchProjectMeetings(project.id)
-              : Promise.resolve({ data: [] as MeetingWithDetails[], error: null }),
-            decisionsService?.fetchProjectDecisions
-              ? decisionsService.fetchProjectDecisions(project.id)
-              : Promise.resolve({ data: [] as DecisionWithDetails[], error: null }),
-          ]);
+          const [tasksRes, milestonesRes, meetingsRes, decisionsRes, membersRes] =
+            await Promise.all([
+              tasksService.fetchProjectTasks(project.id),
+              this.fetchProjectMilestones(project.id),
+              meetingsService?.fetchProjectMeetings
+                ? meetingsService.fetchProjectMeetings(project.id)
+                : Promise.resolve({ data: [] as MeetingWithDetails[], error: null }),
+              decisionsService?.fetchProjectDecisions
+                ? decisionsService.fetchProjectDecisions(project.id)
+                : Promise.resolve({ data: [] as DecisionWithDetails[], error: null }),
+              projectsService?.fetchProjectMembers
+                ? projectsService.fetchProjectMembers(project.id)
+                : Promise.resolve({ data: [] as ProjectMemberWithProfile[], error: null }),
+            ]);
           tasksByProject[project.id] = tasksRes.data ?? [];
           milestonesByProject[project.id] = milestonesRes.data ?? [];
           meetingsByProject[project.id] = meetingsRes.data ?? [];
           decisionsByProject[project.id] = decisionsRes.data ?? [];
+          membersByProject[project.id] = membersRes.data ?? [];
         })
       );
 
@@ -572,6 +721,7 @@ export const milestonesService = {
         milestonesByProject,
         meetingsByProject,
         decisionsByProject,
+        membersByProject,
         currentUserId,
       });
 

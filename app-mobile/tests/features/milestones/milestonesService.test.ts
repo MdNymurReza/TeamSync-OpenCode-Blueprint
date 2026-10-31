@@ -230,6 +230,11 @@ describe('milestonesService domain calculations', () => {
       expect(summary.upcomingMilestones).toHaveLength(1);
       expect(summary.upcomingMilestones[0]?.title).toBe('Midterm Demo');
       expect(summary.upcomingMilestones[0]?.hasDeadlineRisk).toBe(true);
+      expect(summary.teammateWorkloads).toHaveLength(1);
+      expect(summary.teammateWorkloads?.[0]?.userId).toBe('user-1');
+      expect(summary.teammateWorkloads?.[0]?.completedTasks).toBe(1);
+      expect(summary.teammateWorkloads?.[0]?.activeWorkloadTasks).toBe(1);
+      expect(summary.teammateWorkloads?.[0]?.completionPercent).toBe(50);
     });
   });
 
