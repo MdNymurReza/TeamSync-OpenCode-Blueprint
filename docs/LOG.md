@@ -1,0 +1,254 @@
+# MelBond — Development Log
+
+Append newest entries at the top. Never fabricate results or erase history.
+
+## 2026-10-30 — Phase 5: Task management
+- Gate before: `READY_FOR_REVIEW` (Phase 4 verified, Phase 5 explicitly authorized by user).
+- Scope: Schema migration for tasks, task_collaborators, task_checklist_items, and task_comments; triggers enforcing that primary assignee and collaborators must be active project members (`enforce_task_assignee_membership`, `enforce_task_collaborator_membership`); phase detachment on delete (`ON DELETE SET NULL`); RLS policies for project member visibility, creation, updates, and creator/admin deletion; domain layer types and `tasksService` with CRUD, status toggling, reopen behavior, in-memory overdue filtering, checklist item management, and comments; UI screens for task board (`app/projects/[id]/tasks/index.tsx`), task creation (`app/projects/[id]/tasks/new.tsx`), and task details (`app/projects/[id]/tasks/[taskId].tsx`); task overview card on project details screen; 5 new test suites (29 total test suites, 94 total tests passing).
+- Changes:
+  - Created `supabase/migrations/20261030030000_task_management.sql` defining `tasks`, `task_collaborators`, `task_checklist_items`, and `task_comments` tables with constraints, triggers, indexes, and full RLS policies.
+  - Updated `src/types/database.ts` with task table schemas and enum types.
+  - Created `src/features/tasks/types.ts` with task domain types, status/priority options, and filter criteria.
+  - Implemented `src/features/tasks/tasksService.ts` and barrel export `src/features/tasks/index.ts`.
+  - Built `app/projects/[id]/tasks/index.tsx` with filter tabs (All, To Do, In Progress, In Review, Done, Overdue), phase filter chips, task cards with priority badges, checklist counters, and quick status toggle.
+  - Built `app/projects/[id]/tasks/new.tsx` with title, description, phase chips, assignee chips, priority selector, due date input, and validation.
+  - Built `app/projects/[id]/tasks/[taskId].tsx` with status chips, reopen button, interactive checklist with inline creation and toggling, comments thread with post comment input, archive/unarchive, and delete flows.
+  - Updated `app/projects/[id]/index.tsx` to display active Tasks overview card and direct link to the task board.
+  - Registered stack routes in `app/_layout.tsx`.
+  - Added unit/screen/migration tests: `phase5_migrations.test.ts`, `tasksService.test.ts`, `ProjectTasksScreen.test.tsx`, `CreateTaskScreen.test.tsx`, and `TaskDetailsScreen.test.tsx`.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (tsc, expo lint, and 29 test suites passed).
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed.
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen/Migration tests: 29 suites passed, 94 tests passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - Project membership invariant strictly enforced: assignee and collaborators must belong to the workspace or triggers abort.
+  - RLS policies ensure non-members cannot read, create, update, or comment on tasks.
+  - Task deletion restricted to task creator or project admin/owner.
+- Limitations/blockers:
+  - Local Docker daemon remains unavailable; Phase 5 SQL migration must be applied to the remote Supabase project via the Dashboard SQL Editor.
+- Git diff review: Clean untracked state; strictly in-scope task management features and tests.
+- Memory/phase updates: Updated `supabase/README.md`, `docs/Memory.md`, and `docs/Phases.md`.
+- Gate after: `VERIFIED` (Phase 5 completed; ready for Phase 6 authorization).
+- Next phase: Phase 6 (Milestones, timeline, dashboard) — waiting for explicit user authorization.
+
+## 2026-10-30 — Phase 4: Playbooks and phases
+- Gate before: `READY_FOR_REVIEW` (Phase 3 verified, Phase 4 explicitly authorized by user).
+- Scope: Schema migration for project_phases table with project isolation, sequential ordering, and completion flags; RLS policies for project member visibility and admin/owner mutation; starter playbook templates for course assignment, software project, research, FYP/capstone, and general; atomic RPCs `seed_project_phases` and `reorder_project_phases`; auto-seeding playbook phases on project creation; domain layer types and `playbooksService`; accessible `app/projects/[id]/phases.tsx` screen with visual phase reordering, progress tracking, template resets, and role gating; Workflow Phases card on Project Details screen; 3 new test suites (24 total test suites, 71 total tests passing).
+- Changes:
+  - Created `supabase/migrations/20261030020000_playbooks_and_phases.sql` defining `project_phases` table, ordering index, updated_at trigger, RLS policies, `seed_project_phases` RPC with 5 academic/software templates, `reorder_project_phases` RPC, and updated `create_project_with_owner` to auto-seed phases.
+  - Updated `src/types/database.ts` with `project_phases` table schema and RPC signatures.
+  - Created `src/features/playbooks/types.ts` and `src/features/playbooks/constants.ts` with comprehensive default phases and suggested task categories.
+  - Implemented `src/features/playbooks/playbooksService.ts` and barrel export `src/features/playbooks/index.ts`.
+  - Built `app/projects/[id]/phases.tsx` with progress bar, completion toggles, accessible move up/down reordering, create phase modal, edit phase modal, delete phase confirmation, and playbook template switcher modal.
+  - Updated `app/projects/[id]/index.tsx` to display active Workflow Phases preview card, progress calculation, and navigation button.
+  - Registered `projects/[id]/phases` in `app/_layout.tsx`.
+  - Added unit/screen/migration tests: `phase4_migrations.test.ts`, `playbooksService.test.ts`, and `ProjectPhasesScreen.test.tsx`.
+- Commands run:
+  - `npm run typecheck` (in `app-mobile`): exited 0 (0 TS errors).
+  - `npm run lint` (in `app-mobile`): exited 0 (0 warnings, 0 errors).
+  - `npm test` (in `app-mobile`): exited 0 (24 test suites, 71 tests passed).
+  - `npm run check` (in `app-mobile`): exited 0.
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed.
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen/Migration tests: 24 suites passed, 71 tests passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - Cross-project isolation enforced via `is_project_member(project_id)`.
+  - Mutation gating enforced via `is_project_admin_or_owner(project_id)` for adding, editing, reordering, and deleting phases.
+  - Reordering RPC validates all phase IDs belong to the target project before updating sequence orders.
+- Manual/device checks:
+  - Metro hot-reloading with live Expo Go connection on user's device.
+- Limitations/blockers:
+  - Local Docker daemon remains unavailable; Phase 4 SQL migration must be applied to the remote Supabase project via the Dashboard SQL Editor.
+- Git diff review: Clean untracked state; strictly in-scope playbook and phase management features and tests.
+- Memory/phase updates: Updated `docs/Memory.md` and `docs/Phases.md`.
+- Gate after: `VERIFIED` (Phase 4 completed; ready for Phase 5 authorization).
+- Next phase: Phase 5 (Task management) — waiting for explicit user authorization.
+
+## 2026-10-30 — Phase 3: Projects, roles, invitations, membership
+- Gate before: `READY_FOR_REVIEW` (Phase 2 verified, Phase 3 explicitly authorized by user).
+- Scope: Schema migration for projects, project_members, and project_invitations with check constraints, helper security functions, and atomic RPCs; strict Row Level Security (RLS) enforcement; TypeScript database & domain types; projectsService for listing, creating, details, archiving, invitation generation/revocation/redemption, and member role/leave management; UI screens for Workspaces list with active/archived filter tabs, Create Workspace, Join Workspace with code, Workspace Details with invite code generation, and Workspace Team Members management; 4 new test suites (21 total test suites, 54 total tests passing).
+- Changes:
+  - Created `supabase/migrations/20261030010000_projects_and_members.sql` defining `projects`, `project_members`, and `project_invitations` tables, `handle_updated_at` trigger, SECURITY DEFINER functions (`is_project_member`, `get_project_role`, `is_project_admin_or_owner`), atomic RPCs (`create_project_with_owner`, `redeem_invitation`, `leave_project`), and strict RLS policies.
+  - Enforced owner invariant in `leave_project` (sole owner cannot leave without transferring ownership or archiving project).
+  - Updated `src/types/database.ts` with TypeScript contracts for all tables and functions.
+  - Defined domain models and project type options in `src/features/projects/types.ts`.
+  - Implemented `src/features/projects/projectsService.ts` and barrel export `src/features/projects/index.ts`.
+  - Built Workspaces tab screen in `app/(tabs)/projects.tsx` with active/archived filters, empty states, and project cards.
+  - Built `app/projects/new.tsx` for creating workspaces with type selection chips and validation.
+  - Built `app/projects/join.tsx` for redeeming 6-character invitation codes with clear error messages.
+  - Built `app/projects/[id]/index.tsx` for workspace details, active invitation code generation, and member previews.
+  - Built `app/projects/[id]/members.tsx` for team management (role changes, member removal, and leave workspace).
+  - Registered stack routes in `app/_layout.tsx`.
+  - Added unit/screen/migration tests: `projectsService.test.ts`, `ProjectsScreen.test.tsx`, `CreateProjectScreen.test.tsx`, `JoinProjectScreen.test.tsx`, and `phase3_migrations.test.ts`.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (21 test suites, 54 tests passed).
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed.
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen/Migration tests: 21 suites passed, 54 tests passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - Cross-project isolation enforced via RLS (`is_project_member(project_id, auth.uid())`).
+  - Owner invariant verified: sole owner cannot leave without transfer/archive.
+  - High-entropy 6-character alphanumeric invitation codes with 7-day expiration and 5-use limit.
+  - Single-transaction atomic redemption via `redeem_invitation`.
+- Manual/device checks:
+  - Metro hot-reloading with live Expo Go connection on user's device.
+- Limitations/blockers:
+  - Local Docker daemon remains unavailable; Phase 3 SQL migration must be applied to the remote Supabase project via the Dashboard SQL Editor.
+- Git diff review: Clean untracked state; strictly in-scope project and membership features, services, and tests.
+- Memory/phase updates: Updated `docs/Memory.md` and `docs/Phases.md`.
+- Gate after: `VERIFIED` (Phase 3 completed; ready for Phase 4 authorization).
+- Next phase: Phase 4 (Playbooks and phases) — waiting for explicit user authorization.
+
+## 2026-10-30 — Phase 2: Database foundation and authentication
+- Gate before: `READY_FOR_REVIEW` (Phase 1 verified, Phase 2 explicitly authorized by user).
+- Scope: Initial database migration (`public.profiles`, triggers, RLS), Supabase client with AsyncStorage session persistence, database schema types, accessible `Input` UI component, `AuthContext` state & actions, auth screens (`sign-in`, `sign-up`, `reset-password`), session-aware root routing, authenticated profile screen in `app/(tabs)/profile.tsx`, setup guide in `supabase/README.md`, and comprehensive unit/integration/screen tests.
+- Changes:
+  - Created `supabase/migrations/20261030000000_initial_schema.sql` defining `public.profiles` linked to `auth.users`, `moddatetime` update trigger, automatic profile provisioning trigger on user creation (`handle_new_user`), and strict RLS policies ensuring users can only read and update their own profile (`auth.uid() = id`).
+  - Installed `@supabase/supabase-js` and `@react-native-async-storage/async-storage` via Expo CLI.
+  - Configured `src/lib/supabase/client.ts` with AsyncStorage persistence, `autoRefreshToken: true`, `persistSession: true`, and graceful dummy client fallback when env vars are missing.
+  - Defined TypeScript schema interfaces in `src/types/database.ts`.
+  - Implemented accessible `src/components/ui/Input.tsx` with clear error state, hint text, and secure password toggle.
+  - Implemented `src/features/auth/AuthContext.tsx`, `types.ts`, and `index.ts` with typed methods: `signIn`, `signUp`, `signOut`, `resetPassword`, `refreshProfile`.
+  - Created auth stack layout `app/(auth)/_layout.tsx` and auth screens: `app/(auth)/sign-in.tsx`, `app/(auth)/sign-up.tsx`, `app/(auth)/reset-password.tsx`.
+  - Wrapped root app in `<AuthProvider>` in `app/_layout.tsx`, and updated `app/index.tsx` to route between `(auth)/sign-in` and `(tabs)/index` based on session state.
+  - Updated `app/(tabs)/profile.tsx` with user profile details (email, full name, university, member since), backend connectivity badge, and sign out with confirmation dialog.
+  - Updated `supabase/README.md` with hosted Supabase dashboard setup, SQL editor migration steps, Auth configuration, and `.env` setup.
+  - Added unit, integration, and screen tests: `Input.test.tsx`, `AuthContext.test.tsx`, `sign-in.test.tsx`, `profile.test.tsx`, `migration.test.ts`. Total test suites increased to 17, total tests to 37.
+- Commands run:
+  - `npx expo install @supabase/supabase-js @react-native-async-storage/async-storage`
+  - `npm run check` (in `app-mobile`): typecheck + lint + test, exited 0 (17 suites, 37 tests passed).
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed, no issues detected.
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen/Migration tests: 17 suites passed, 37 tests passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - Client remains strictly untrusted; only anon key and project URL are accepted. No service-role keys in mobile client.
+  - RLS strictly enforced in migration (`auth.uid() = id`).
+  - Passwords and sensitive input obscured with accessible toggle.
+  - Error messages sanitized; no tokens or session secrets logged.
+- Manual/device checks:
+  - Live Expo development server running for user phone testing via Expo Go.
+- Limitations/blockers:
+  - Docker is not installed on host machine, preventing local Supabase CLI execution; remote Supabase project is used and documented.
+- Git diff review: Clean untracked state; strictly in-scope database foundation, auth features, screens, and tests.
+- Memory/phase updates: Updated `docs/Memory.md` and `docs/Phases.md`.
+- Gate after: `VERIFIED` (Phase 2 completed; ready for Phase 3 authorization).
+- Next phase: Phase 3 (Projects, roles, invitations, membership) — waiting for explicit user authorization.
+
+## 2026-10-30 — Phase 1: Design foundation and app shell
+- Gate before: `READY_FOR_REVIEW` (Phase 0 verified, Phase 1 explicitly authorized by user).
+- Scope: Define centralized design system tokens (colors, spacing, typography, radii, touch targets), implement core accessible UI components (`Button`, `Badge`, `Card`, `EmptyState`, `ErrorView`, `LoadingView`), configure Expo Router `(tabs)` navigation shell with 4 global destinations (Home, Projects, Activity, Profile), install vector icon dependencies, and write unit/component/screen tests.
+- Changes:
+  - Created `src/theme/tokens.ts` and `src/theme/index.ts` with 8-point spacing scale, neutral slate surfaces, high-contrast text, restrained indigo brand accent, and accessible semantic status pairings.
+  - Implemented `src/components/ui/Button.tsx`: primary, secondary, outline, destructive, and text variants; minimum 48pt touch targets; loading state with activity indicator; interaction disabling.
+  - Implemented `src/components/ui/Badge.tsx`: text + icon + color status indicators (never color alone, per design principles).
+  - Implemented `src/components/ui/Card.tsx`: clean container surfaces with subtle borders, avoiding nested cards and artificial elevation.
+  - Implemented `src/components/ui/EmptyState.tsx`: accessible summary with icon, header, description, and optional action.
+  - Implemented `src/components/ui/ErrorView.tsx`: accessible alert role with inline banner and full card layouts with retry callbacks.
+  - Implemented `src/components/ui/LoadingView.tsx`: accessible progressbar indicator with message for full-screen and inline contexts.
+  - Installed `@expo/vector-icons`, `expo-asset`, and `expo-font` via Expo CLI.
+  - Configured `app/(tabs)/_layout.tsx` hosting 4 global tabs with Ionicons: Home, Projects, Activity, Profile.
+  - Built tab screens in `app/(tabs)/index.tsx`, `projects.tsx`, `activity.tsx`, `profile.tsx` with informative empty states and zero misleading dead controls.
+  - Updated `app/_layout.tsx` to host `(tabs)` stack with dark status bar, and `app/index.tsx` to redirect to `/(tabs)/index`.
+  - Added global Jest setup `tests/setup.ts` and configured `setupFilesAfterEnv` in `package.json`.
+  - Added 10 new test suites covering tokens, components, and screen layouts in `tests/`.
+- Commands run:
+  - `npx expo install @expo/vector-icons expo-asset expo-font`
+  - `npm run typecheck` (in `app-mobile`): exited 0
+  - `npm run lint` (in `app-mobile`): exited 0
+  - `npm run test -- --ci` (in `app-mobile`): 11 suites, 24 tests passed, exited 0
+  - `npm run check` (in `app-mobile`): typecheck + lint + test, exited 0
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed, no issues detected
+- Test results (pass/fail/skip):
+  - Unit/Component/Screen tests: 11 passed, 0 failed (24 tests total).
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - Client remains strictly untrusted; UI primitives do not embed privileged secrets or mock server authority.
+  - Screen states do not display fabricated data.
+- Manual/device checks:
+  - Live Expo development server running for user phone testing via Expo Go.
+- Limitations/blockers:
+  - None within Phase 1 scope.
+- Git diff review: Clean untracked state; strictly in-scope UI tokens, primitives, navigation routes, and tests.
+- Memory/phase updates: Updated `docs/Memory.md` and `docs/Phases.md`.
+- Gate after: `VERIFIED` (Phase 1 completed; ready for Phase 2 authorization).
+- Next phase: Phase 2 (Database foundation and authentication) — waiting for explicit user authorization.
+
+## 2026-10-30 — Phase 0: Repository discovery and bootstrap
+- Gate before: `NOT_STARTED`
+- Scope: Repository discovery, toolchain inspection, initialize git, scaffold minimal Expo SDK 58 + strict TypeScript shell in `app-mobile/`, configure Expo Router, ESLint, Jest (`jest-expo` + `@testing-library/react-native`), typecheck, `.env.example`, root/app ignore rules, backend migration strategy document in `supabase/README.md`.
+- Changes:
+  - Initialized git repository.
+  - Scaffolding via `create-expo-app` with Expo SDK 58, React 19.3.0, React Native 0.88.1, Expo Router 58.0.28.
+  - Created minimal root layout `app-mobile/app/_layout.tsx` and placeholder screen `app-mobile/app/index.tsx` (accessible header, no dead controls).
+  - Configured `app-mobile/tsconfig.json` with strict mode, `noUncheckedIndexedAccess`, `@/*` alias, and `jest` types.
+  - Configured `app-mobile/eslint.config.js` with Expo flat config, strict TS no-explicit-any, console warnings.
+  - Added unit/smoke test `app-mobile/tests/bootstrap.test.tsx` verifying accessible header and zero interactive buttons.
+  - Added `app-mobile/.env.example` documenting safe public client env vars and warning against server-side secret leaks.
+  - Added `.gitignore` and `supabase/README.md` documenting migration strategy and prerequisites.
+- Commands run:
+  - `git init`
+  - `npx expo install expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants react-dom`
+  - `npx expo install jest-expo jest @types/jest @testing-library/react-native eslint eslint-config-expo -- --save-dev`
+  - `npm run typecheck` (in `app-mobile`): exited 0
+  - `npm run lint` (in `app-mobile`): exited 0
+  - `npm run test -- --ci` (in `app-mobile`): 2 passed, 1 suite, exited 0
+  - `npm run check` (in `app-mobile`): typecheck + lint + test, exited 0
+  - `npm run doctor` (in `app-mobile`): 20/20 checks passed, no issues detected
+- Test results (pass/fail/skip):
+  - Unit tests: 2 passed, 0 failed.
+  - Typecheck: 0 errors.
+  - Linter: 0 warnings, 0 errors.
+  - Expo doctor: 20/20 checks passed.
+- Security/access checks:
+  - No secret files tracked; `.env*` excluded by `.gitignore`.
+  - `.env.example` contains only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` placeholders with strict warnings against service keys.
+- Manual/device checks:
+  - Android device/emulator check skipped (no Android SDK / adb / Java installed in current environment).
+- Limitations/blockers:
+  - Docker is not installed on host machine, preventing local Supabase CLI execution; remote Supabase project will be required for Phase 2.
+  - Android SDK / Java not installed; mobile device testing will require Expo Go on physical device or EAS Cloud builds.
+- Git diff review: Clean untracked state; no secrets, build artifacts, or node_modules tracked.
+- Memory/phase updates: Updated `docs/Memory.md` and `docs/Phases.md`.
+- Gate after: `VERIFIED` (Phase 0 completed; ready for Phase 1 authorization).
+- Next phase: Phase 1 (Design foundation and app shell) — waiting for explicit user authorization.
+
+
+
+## 2026-10-14 — Documentation blueprint prepared
+- Type: documentation/bootstrap plan.
+- Prepared product, architecture, design, rules, memory, phases, and prompt templates.
+- Recommended stack: React Native + Expo + TypeScript, Expo Router, Supabase, TanStack Query, React Hook Form + Zod, Expo Notifications, EAS Build.
+- Defined phase gates and required persistent documentation updates.
+- App implementation: not performed by this documentation package.
+- App tests: not run; no application repository was inspected.
+- Documentation package status: prepared for review. Phase 0 implementation remains `NOT_STARTED`.
+
+## Entry template
+### YYYY-MM-DD — Phase N: Short title
+- Gate before:
+- Scope:
+- Changes:
+- Commands run:
+- Test results (pass/fail/skip):
+- Security/access checks:
+- Manual/device checks:
+- Limitations/blockers:
+- Git diff review:
+- Memory/phase updates:
+- Gate after:
+- Next phase: waiting for explicit user authorization.

@@ -1,0 +1,31 @@
+# Repository-level ignores. App-specific ignores live in app-mobile/.gitignore.
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.jks
+*.keystore
+service-account*.json
+google-services.json
+
+# Dependencies / build output
+node_modules/
+coverage/
+dist/
+
+# Supabase local state
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
