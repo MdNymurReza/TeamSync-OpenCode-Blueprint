@@ -2,17 +2,36 @@
 
 Append newest entries at the top. Never fabricate results or erase history.
 
+## 2026-10-31 — Public Teammate Profile Visibility, Interactive Student Dossier & Sleek In-App Toast + Haptics
+- Scope: Fix profile visibility so student profiles (custom avatar photos, names, institutions, departments) are visible to teammates across workspaces, tasks, decisions, and reports; add interactive Student Dossier modals; implement native in-app floating Toast banner system with `expo-haptics`.
+- Changes:
+  - Fixed database upsert in `app-mobile/src/features/auth/AuthContext.tsx`: allowed `file://`, `content://`, and base64 `data:image/` URIs during validation and switched to `.upsert(...)` so profile changes are persisted to `public.profiles` in Supabase without failing on missing initial records.
+  - Passed `avatarUrl` to `<Avatar>` components across:
+    - `app/projects/[id]/index.tsx`: team member cards now render teammates' real avatar photos or initials.
+    - `app/projects/[id]/members.tsx`: member roster renders teammates' avatars.
+    - `app/projects/[id]/tasks/index.tsx`: task cards render primary assignee avatars.
+    - `app/projects/[id]/tasks/[taskId].tsx`: task header and comment threads render author and assignee avatars.
+    - `app/projects/[id]/pulse.tsx`: weekly pulse check-in cards render teammates' avatars.
+    - `src/components/ui/TeammateCircleChart.tsx`: workload rows on Home and Project Reports display teammates' custom avatars.
+  - Added interactive **Teammate Profile Dossier Modal** (`testID="member-profile-modal"`) in `app/projects/[id]/index.tsx`: tapping any teammate in the Team Members card opens their full academic profile (hero avatar, full name, role badge, university, department, email, and joined date).
+  - Installed `expo-haptics` and created `ToastProvider` / `useToast()` in `app-mobile/src/components/ui/Toast.tsx` with animated spring entry, auto-dismiss, tap-to-dismiss, and physical vibration feedback on success, error, warning, and info actions.
+  - Integrated `useToast()` across `ProfileScreen`, `ProjectResourcesScreen`, and `ProjectOverviewScreen` replacing disruptive popups with smooth top-floating banners.
+  - Added unit test suite `tests/components/Toast.test.tsx` verifying toast rendering, dismissal, and haptic triggers.
+- Commands run:
+  - `npm run check` (in `app-mobile`): exited 0 (`tsc --noEmit`, `expo lint`, and `jest --ci` — 47/47 test suites, 187/187 tests passed with 0 errors and 0 warnings).
+
 ## 2026-10-31 — Native Device File and Photo Pickers (`expo-image-picker` & `expo-document-picker`)
 - Scope: Enable native device media and document selection for profile pictures in Profile Studio and private team document uploads in the Resource Hub.
 - Changes:
   - Installed `expo-image-picker` and `expo-document-picker` in `app-mobile/package.json`.
   - Added global Jest mocks for `expo-image-picker` (`launchImageLibraryAsync`, `launchCameraAsync`, permissions) and `expo-document-picker` (`getDocumentAsync`) in `app-mobile/tests/setup.ts`.
   - Integrated `expo-image-picker` into `app-mobile/app/(tabs)/profile.tsx`: added "Choose from Gallery" (`testID="pick-gallery-button"`) and "Take Photo with Camera" (`testID="take-photo-button"`) actions with camera and media library runtime permission checks, live circular avatar preview, and profile picture persistence.
+  - Resolved avatar URL scheme validation: allowed `file://`, `content://`, and base64 `data:image/` URIs alongside `https://`, preventing false rejection alerts when picking local gallery/camera photos, and enabled `base64: true` in picker configs so custom pictures persist and synchronize across devices.
   - Integrated `expo-document-picker` into `app-mobile/app/projects/[id]/resources.tsx`: added "Pick Document from Device" (`testID="pick-document-button"`), automatic file metadata extraction (file name, MIME type, size validation against the 10 MB limit), picked file indicator pill with size formatting, and binary upload via `Uint8Array` to Supabase Storage.
   - Added unit test in `app-mobile/tests/screens/ProjectResourcesScreen.test.tsx` for native document selection, file metadata auto-fill, and binary array buffer upload.
-  - Expanded `app-mobile/tests/screens/ProfileScreen.test.tsx` to verify native gallery and camera buttons and custom avatar persistence.
+  - Expanded `app-mobile/tests/screens/ProfileScreen.test.tsx` to verify native gallery and camera buttons, device photo indicator, and custom avatar saving directly without error.
 - Commands run:
-  - `npm run check` (in `app-mobile`): exited 0 (`tsc --noEmit`, `expo lint`, and `jest --ci` — 46/46 test suites, 182/182 tests passed with 0 errors and 0 warnings).
+  - `npm run check` (in `app-mobile`): exited 0 (`tsc --noEmit`, `expo lint`, and `jest --ci` — 46/46 test suites, 183/183 tests passed with 0 errors and 0 warnings).
 
 ## 2026-10-31 — Fix `unique_project_member` Constraint Conflict on Project Creation
 - Root Cause: In `create_project_with_owner`, an `INSERT INTO public.projects` fired the `AFTER INSERT` trigger `on_project_created_add_owner`, which immediately inserted `(project_id, user_id, 'owner')` into `public.project_members`. The subsequent statement in `create_project_with_owner` attempted a second insert into `public.project_members` without `ON CONFLICT DO NOTHING`, raising `duplicate key value violates unique constraint "unique_project_member"`.

@@ -3,6 +3,7 @@ import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import type { DashboardTeammateWorkloadItem } from '@/features/milestones/types';
 import { colors, radii, spacing, typography } from '@/theme';
+import { Avatar } from './Avatar';
 import { Badge } from './Badge';
 
 const TEAMMATE_PALETTE = [
@@ -270,6 +271,14 @@ export function TeammateCircleChart({
                   {/* Teammate Identity & Load Counters */}
                   <View style={styles.teammateInfoCol}>
                     <View style={styles.teammateNameRow}>
+                      {tm.userId !== 'unassigned' ? (
+                        <Avatar
+                          name={tm.displayName}
+                          avatarUrl={tm.avatarUrl}
+                          size={24}
+                          style={styles.tmAvatarSmall}
+                        />
+                      ) : null}
                       <Text style={styles.teammateName} numberOfLines={1}>
                         {tm.displayName}
                       </Text>
@@ -528,6 +537,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.xs,
+  },
+  tmAvatarSmall: {
+    marginRight: 6,
   },
   teammateName: {
     ...typography.label,

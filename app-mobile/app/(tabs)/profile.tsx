@@ -22,6 +22,7 @@ import {
   ScreenHeader,
   SectionHeader,
   TabScreen,
+  useToast,
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { DashboardSummary, milestonesService } from '@/features/milestones';
@@ -105,8 +106,21 @@ const AVATAR_PHOTO_PRESETS: {
   },
 ];
 
+export function isValidAvatarUri(uri?: string | null): boolean {
+  if (!uri) return false;
+  const u = uri.trim();
+  return (
+    u.startsWith('https://') ||
+    u.startsWith('http://') ||
+    u.startsWith('file://') ||
+    u.startsWith('content://') ||
+    u.startsWith('data:image/')
+  );
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
+  const toast = useToast();
   const { user, profile, isConfigured, signOut, updateProfile } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -221,13 +235,10 @@ export default function ProfileScreen() {
     }
 
     const trimmedAvatar = editAvatarInput.trim();
-    if (
-      trimmedAvatar &&
-      !trimmedAvatar.startsWith('https://') &&
-      !trimmedAvatar.startsWith('http://') &&
-      !trimmedAvatar.startsWith('data:image/')
-    ) {
-      setEditError('Profile picture URL must start with https:// or http://');
+    if (trimmedAvatar && !isValidAvatarUri(trimmedAvatar)) {
+      setEditError(
+        'Profile picture must be a valid image URL (https://), device photo, or portrait preset.'
+      );
       return;
     }
 
@@ -254,6 +265,7 @@ export default function ProfileScreen() {
     setLocalAvatarUrl(trimmedAvatar || null);
     setIsSavingProfile(false);
     setIsEditModalOpen(false);
+    toast.showSuccess('Profile details saved successfully', 'Dossier Updated');
   };
 
   const openAvatarUploadModal = () => {
@@ -274,11 +286,16 @@ export default function ProfileScreen() {
         mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.85,
+        quality: 0.7,
+        base64: true,
       });
 
-      if (!res.canceled && res.assets && res.assets[0]?.uri) {
-        setAvatarDraftUrl(res.assets[0].uri);
+      if (!res.canceled && res.assets && res.assets[0]) {
+        const asset = res.assets[0];
+        const selectedUri = asset.base64
+          ? `data:image/jpeg;base64,${asset.base64}`
+          : asset.uri;
+        setAvatarDraftUrl(selectedUri);
         setAvatarUploadError(null);
       }
     } catch {
@@ -297,11 +314,16 @@ export default function ProfileScreen() {
       const res = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.85,
+        quality: 0.7,
+        base64: true,
       });
 
-      if (!res.canceled && res.assets && res.assets[0]?.uri) {
-        setAvatarDraftUrl(res.assets[0].uri);
+      if (!res.canceled && res.assets && res.assets[0]) {
+        const asset = res.assets[0];
+        const selectedUri = asset.base64
+          ? `data:image/jpeg;base64,${asset.base64}`
+          : asset.uri;
+        setAvatarDraftUrl(selectedUri);
         setAvatarUploadError(null);
       }
     } catch {
@@ -313,14 +335,9 @@ export default function ProfileScreen() {
     const nextUrl =
       overrideUrl !== undefined ? overrideUrl : avatarDraftUrl.trim() || null;
 
-    if (
-      nextUrl &&
-      !nextUrl.startsWith('https://') &&
-      !nextUrl.startsWith('http://') &&
-      !nextUrl.startsWith('data:image/')
-    ) {
+    if (nextUrl && !isValidAvatarUri(nextUrl)) {
       setAvatarUploadError(
-        'Please enter a valid https:// image URL or choose a portrait preset below.'
+        'Please enter a valid https:// image URL, pick a photo from your device, or choose a portrait preset below.'
       );
       return;
     }
@@ -342,6 +359,10 @@ export default function ProfileScreen() {
     setLocalAvatarUrl(nextUrl);
     setIsUploadingAvatar(false);
     setIsAvatarModalOpen(false);
+    toast.showSuccess(
+      nextUrl ? 'Profile picture updated successfully' : 'Reset to initials avatar',
+      'Studio Portrait'
+    );
   };
 
   const handleTogglePreference = async (key: PreferenceBooleanKey) => {
@@ -747,13 +768,41 @@ export default function ProfileScreen() {
                 />
               </View>
 
+              {avatarDraftUrl.startsWith('data:image/') ||
+              avatarDraftUrl.startsWith('file://') ||
+              avatarDraftUrl.startsWith('content://') ? (
+                <View style={styles.pickedFileNotice}>
+                  <Ionicons name="checkmark-circle" size={18} color={colors.brandMint} />
+                  <Text style={styles.pickedFileNameText} numberOfLines={1}>
+                    Device photo chosen and ready to save
+                  </Text>
+                  <Pressable
+                    hitSlop={8}
+                    onPress={() => setAvatarDraftUrl('')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove selected device photo"
+                  >
+                    <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+              ) : null}
+
               {/* Upload via Photo URL */}
               <Input
                 testID="avatar-url-input"
-                label="Upload Photo URL (https://)"
+                label="Or Enter Photo URL (https://)"
                 placeholder="https://example.edu/photos/student-avatar.jpg"
-                value={avatarDraftUrl}
-                onChangeText={setAvatarDraftUrl}
+                value={
+                  avatarDraftUrl.startsWith('data:image/') ||
+                  avatarDraftUrl.startsWith('file://') ||
+                  avatarDraftUrl.startsWith('content://')
+                    ? ''
+                    : avatarDraftUrl
+                }
+                onChangeText={(val) => {
+                  setAvatarDraftUrl(val);
+                  setAvatarUploadError(null);
+                }}
                 autoCapitalize="none"
                 keyboardType="url"
               />
@@ -1239,6 +1288,24 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   nativePickBtn: {
+    flex: 1,
+  },
+  pickedFileNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.surfaceSubtle,
+    borderWidth: 1,
+    borderColor: colors.primaryBorder,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  pickedFileNameText: {
+    ...typography.caption,
+    color: colors.textPrimary,
+    fontWeight: '700',
     flex: 1,
   },
   presetSectionTitle: {

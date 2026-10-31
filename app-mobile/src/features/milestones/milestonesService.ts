@@ -220,7 +220,8 @@ export function reconcileDashboardSummary(params: {
     map: Map<string, MutableWorkload>,
     userId: string,
     displayName: string,
-    roleLabel?: string | null
+    roleLabel?: string | null,
+    avatarUrl?: string | null
   ): MutableWorkload => {
     const existing = map.get(userId);
     if (existing) {
@@ -233,12 +234,16 @@ export function reconcileDashboardSummary(params: {
       if (!existing.roleLabel && roleLabel) {
         existing.roleLabel = roleLabel;
       }
+      if (!existing.avatarUrl && avatarUrl) {
+        existing.avatarUrl = avatarUrl;
+      }
       return existing;
     }
     const created: MutableWorkload = {
       userId,
       displayName,
       roleLabel: roleLabel ?? null,
+      avatarUrl: avatarUrl ?? null,
       totalTasks: 0,
       completedTasks: 0,
       inProgressTasks: 0,
@@ -262,8 +267,9 @@ export function reconcileDashboardSummary(params: {
         member.profile?.email?.split('@')[0] ||
         (currentUserId && member.user_id === currentUserId ? 'You' : 'Teammate');
       const roleTitle = member.role;
-      ensureTeammateEntry(projTeammateMap, member.user_id, memberName, roleTitle);
-      ensureTeammateEntry(globalTeammateMap, member.user_id, memberName, roleTitle);
+      const memberAvatar = member.profile?.avatar_url ?? null;
+      ensureTeammateEntry(projTeammateMap, member.user_id, memberName, roleTitle, memberAvatar);
+      ensureTeammateEntry(globalTeammateMap, member.user_id, memberName, roleTitle, memberAvatar);
     }
 
     let projDone = 0;
@@ -320,17 +326,20 @@ export function reconcileDashboardSummary(params: {
             ? 'You'
             : 'Member';
 
+      const assigneeAvatar = task.primary_assignee?.avatar_url ?? null;
       const projEntry = ensureTeammateEntry(
         projTeammateMap,
         assigneeId,
         assigneeName,
-        assigneeRole
+        assigneeRole,
+        assigneeAvatar
       );
       const globalEntry = ensureTeammateEntry(
         globalTeammateMap,
         assigneeId,
         assigneeName,
-        assigneeRole
+        assigneeRole,
+        assigneeAvatar
       );
 
       for (const entry of [projEntry, globalEntry]) {

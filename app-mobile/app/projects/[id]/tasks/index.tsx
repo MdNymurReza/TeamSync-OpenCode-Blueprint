@@ -380,7 +380,11 @@ export default function ProjectTasksScreen() {
                     {/* Bottom Row: Assignee & Checklist/Comment icons */}
                     <View style={styles.taskFooterRow}>
                       <View style={styles.assigneeContainer}>
-                        <Avatar name={assigneeName} size={24} />
+                        <Avatar
+                          name={assigneeName}
+                          avatarUrl={task.primary_assignee?.avatar_url}
+                          size={24}
+                        />
                         <Text style={styles.assigneeName} numberOfLines={1}>
                           {assigneeName}
                         </Text>

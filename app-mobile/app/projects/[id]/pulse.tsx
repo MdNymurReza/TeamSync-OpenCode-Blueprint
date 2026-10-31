@@ -246,7 +246,11 @@ export default function ProjectPulseScreen() {
                 <Card key={item.id} style={styles.checkinCard}>
                   <View style={styles.checkinHeader}>
                     <View style={styles.memberRow}>
-                      <Avatar name={memberName} size={36} />
+                      <Avatar
+                        name={memberName}
+                        avatarUrl={item.user?.avatar_url}
+                        size={36}
+                      />
                       <View style={styles.memberTextCol}>
                         <Text style={styles.memberName}>{memberName}</Text>
                         <Text style={styles.weekText}>

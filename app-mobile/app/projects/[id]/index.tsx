@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -64,6 +65,7 @@ export default function ProjectDetailsScreen() {
   const [resources, setResources] = useState<ResourceWithDetails[]>([]);
   const [pulseCheckins, setPulseCheckins] = useState<TeamPulseCheckinWithProfile[]>([]);
   const [activeInvitation, setActiveInvitation] = useState<ProjectInvitation | null>(null);
+  const [selectedMember, setSelectedMember] = useState<ProjectMemberWithProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -499,12 +501,20 @@ export default function ProjectDetailsScreen() {
         <SectionHeader
           title={`Milestones & Timeline (${milestones.length})`}
           action={
-            <Button
-              title="Timeline"
-              variant="text"
-              size="sm"
-              onPress={() => router.push(`/projects/${project.id}/milestones` as Href)}
-            />
+            <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+              <Button
+                title="Calendar"
+                variant="outline"
+                size="sm"
+                onPress={() => router.push(`/projects/${project.id}/timeline` as Href)}
+              />
+              <Button
+                title="Milestones"
+                variant="text"
+                size="sm"
+                onPress={() => router.push(`/projects/${project.id}/milestones` as Href)}
+              />
+            </View>
           }
           style={styles.cardHeaderRow}
         />
@@ -905,8 +915,19 @@ export default function ProjectDetailsScreen() {
           {members.map((m, i) => {
             const displayName = m.profile?.full_name ?? 'Team Member';
             return (
-              <View key={m.id} style={[styles.memberRow, i > 0 && styles.rowBorder]}>
-                <Avatar name={displayName} size={40} style={styles.avatarSpacing} />
+              <Pressable
+                key={m.id}
+                onPress={() => setSelectedMember(m)}
+                accessibilityRole="button"
+                accessibilityLabel={`View ${displayName}'s profile`}
+                style={[styles.memberRow, i > 0 && styles.rowBorder]}
+              >
+                <Avatar
+                  name={displayName}
+                  avatarUrl={m.profile?.avatar_url}
+                  size={40}
+                  style={styles.avatarSpacing}
+                />
                 <View style={styles.memberInfo}>
                   <Text style={styles.memberName} numberOfLines={1}>
                     {displayName}
@@ -922,7 +943,7 @@ export default function ProjectDetailsScreen() {
                   }
                   size="sm"
                 />
-              </View>
+              </Pressable>
             );
           })}
         </View>
@@ -946,6 +967,97 @@ export default function ProjectDetailsScreen() {
           />
         </View>
       ) : null}
+
+      {/* Teammate Profile Dossier Modal */}
+      <Modal
+        visible={Boolean(selectedMember)}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSelectedMember(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalSheet} testID="member-profile-modal">
+            {selectedMember ? (
+              <>
+                <View style={styles.modalHeader}>
+                  <View style={styles.modalTitleCol}>
+                    <Text style={styles.modalEyebrow}>TEAMMATE PROFILE</Text>
+                    <Text style={styles.modalTitle} accessibilityRole="header">
+                      Student Dossier
+                    </Text>
+                  </View>
+                  <Pressable
+                    hitSlop={8}
+                    style={styles.modalCloseBtn}
+                    onPress={() => setSelectedMember(null)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close teammate profile"
+                  >
+                    <Ionicons name="close" size={20} color={colors.textPrimary} />
+                  </Pressable>
+                </View>
+
+                <View style={styles.dossierHeroCol}>
+                  <Avatar
+                    name={selectedMember.profile?.full_name ?? 'Team Member'}
+                    avatarUrl={selectedMember.profile?.avatar_url}
+                    size={76}
+                  />
+                  <Text style={styles.dossierName}>
+                    {selectedMember.profile?.full_name ?? 'Team Member'}
+                  </Text>
+                  <Badge
+                    label={selectedMember.role.toUpperCase()}
+                    variant={
+                      selectedMember.role === 'owner'
+                        ? 'primary'
+                        : selectedMember.role === 'admin'
+                          ? 'info'
+                          : 'default'
+                    }
+                    size="md"
+                  />
+                </View>
+
+                <View style={styles.dossierDetailsGrid}>
+                  <View style={styles.dossierDetailItem}>
+                    <Text style={styles.dossierItemLabel}>UNIVERSITY / INSTITUTION</Text>
+                    <Text style={styles.dossierItemValue}>
+                      {selectedMember.profile?.university ?? 'Not specified'}
+                    </Text>
+                  </View>
+                  <View style={styles.dossierDetailItem}>
+                    <Text style={styles.dossierItemLabel}>DEPARTMENT / FACULTY</Text>
+                    <Text style={styles.dossierItemValue}>
+                      {selectedMember.profile?.department ?? 'General Academic'}
+                    </Text>
+                  </View>
+                  <View style={styles.dossierDetailItem}>
+                    <Text style={styles.dossierItemLabel}>EMAIL ADDRESS</Text>
+                    <Text style={styles.dossierItemValue}>
+                      {selectedMember.profile?.email ?? 'Shared via Project'}
+                    </Text>
+                  </View>
+                  <View style={styles.dossierDetailItem}>
+                    <Text style={styles.dossierItemLabel}>WORKSPACE MEMBER SINCE</Text>
+                    <Text style={styles.dossierItemValue}>
+                      {new Date(selectedMember.joined_at).toLocaleDateString()}
+                    </Text>
+                  </View>
+                </View>
+
+                <Button
+                  title="Close"
+                  variant="outline"
+                  size="md"
+                  onPress={() => setSelectedMember(null)}
+                  style={{ marginTop: spacing.md }}
+                />
+              </>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -1171,5 +1283,73 @@ const styles = StyleSheet.create({
   },
   bottomActions: {
     marginTop: spacing.xs,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    padding: spacing.base,
+    paddingBottom: spacing.xxl,
+    gap: spacing.sm,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  modalTitleCol: {
+    flex: 1,
+  },
+  modalEyebrow: {
+    ...typography.overline,
+    color: colors.primary,
+    letterSpacing: 1.2,
+  },
+  modalTitle: {
+    ...typography.titleMedium,
+    color: colors.textPrimary,
+  },
+  modalCloseBtn: {
+    padding: spacing.xs,
+    borderRadius: radii.full,
+    backgroundColor: colors.surfaceSubtle,
+  },
+  dossierHeroCol: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    gap: spacing.xs,
+  },
+  dossierName: {
+    ...typography.titleLarge,
+    color: colors.textPrimary,
+    marginTop: spacing.xs,
+  },
+  dossierDetailsGrid: {
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  dossierDetailItem: {
+    backgroundColor: colors.surfaceSubtle,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+  },
+  dossierItemLabel: {
+    ...typography.overline,
+    color: colors.textMuted,
+    fontSize: 10,
+  },
+  dossierItemValue: {
+    ...typography.bodyMedium,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginTop: 2,
   },
 });

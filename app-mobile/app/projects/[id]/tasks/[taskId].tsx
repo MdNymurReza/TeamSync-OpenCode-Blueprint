@@ -379,7 +379,11 @@ export default function TaskDetailsScreen() {
             <View style={styles.metaCell}>
               <Text style={styles.metaCellLabel}>Primary Assignee</Text>
               <View style={styles.assigneeValueRow}>
-                <Avatar name={task.primary_assignee?.full_name ?? 'Unassigned'} size={24} />
+                <Avatar
+                  name={task.primary_assignee?.full_name ?? 'Unassigned'}
+                  avatarUrl={task.primary_assignee?.avatar_url}
+                  size={24}
+                />
                 <Text style={styles.metaCellValue} numberOfLines={1}>
                   {task.primary_assignee?.full_name ?? 'Unassigned'}
                 </Text>
@@ -481,7 +485,11 @@ export default function TaskDetailsScreen() {
 
             return (
               <View key={comment.id} style={styles.commentRow}>
-                <Avatar name={authorName} size={34} />
+                <Avatar
+                  name={authorName}
+                  avatarUrl={comment.author?.avatar_url}
+                  size={34}
+                />
                 <View style={styles.commentBody}>
                   <View style={styles.commentMetaRow}>
                     <Text style={styles.commentAuthor}>{authorName}</Text>

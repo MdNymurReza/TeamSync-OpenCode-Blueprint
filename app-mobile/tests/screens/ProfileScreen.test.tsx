@@ -66,4 +66,30 @@ describe('ProfileScreen (Professional Student Profile, Avatar Upload & Settings)
     expect(screen.getByText('MIT')).toBeTruthy();
     expect(screen.getByText('Robotics & AI')).toBeTruthy();
   });
+
+  it('allows picking a photo from device gallery and saving it directly as avatar', async () => {
+    await render(
+      <AuthProvider>
+        <ProfileScreen />
+      </AuthProvider>
+    );
+
+    // Open upload studio modal
+    await fireEvent.press(screen.getByTestId('upload-profile-photo-button'));
+    expect(await screen.findByTestId('avatar-upload-modal')).toBeTruthy();
+
+    // Pick from gallery - returns base64 / uri
+    await fireEvent.press(screen.getByTestId('pick-gallery-button'));
+
+    // Should indicate device photo is chosen
+    expect(
+      await screen.findByText('Device photo chosen and ready to save')
+    ).toBeTruthy();
+
+    // Save avatar directly without error
+    await fireEvent.press(screen.getByTestId('save-avatar-button'));
+
+    // Modal closes and displays Custom Photo badge
+    expect(await screen.findByText('Custom Photo')).toBeTruthy();
+  });
 });

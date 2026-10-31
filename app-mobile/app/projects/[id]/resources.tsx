@@ -23,6 +23,7 @@ import {
   IconTile,
   Input,
   LoadingView,
+  useToast,
 } from '@/components/ui';
 import { useAuth } from '@/features/auth';
 import { milestonesService, MilestoneWithDetails } from '@/features/milestones';
@@ -49,6 +50,7 @@ const UPLOAD_MIME_PRESETS = [
 export default function ProjectResourcesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const toast = useToast();
 
   const [project, setProject] = useState<ProjectWithRole | null>(null);
   const [resources, setResources] = useState<ResourceWithDetails[]>([]);
@@ -230,6 +232,7 @@ export default function ProjectResourcesScreen() {
       } else {
         setIsModalVisible(false);
         fetchData();
+        toast.showSuccess('Resource link added to project', 'Resource Hub');
       }
     } else {
       let uploadContent: string | Uint8Array = fileContent || (pickedFile ? `[Uploaded file: ${pickedFile.name}]` : '');
@@ -260,6 +263,7 @@ export default function ProjectResourcesScreen() {
       } else {
         setIsModalVisible(false);
         fetchData();
+        toast.showSuccess('Private file uploaded to project vault', 'Upload Complete');
       }
     }
   };

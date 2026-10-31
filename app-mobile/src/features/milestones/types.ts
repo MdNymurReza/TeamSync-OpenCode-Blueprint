@@ -73,6 +73,7 @@ export interface DashboardTeammateWorkloadItem {
   userId: string;
   displayName: string;
   roleLabel?: string | null;
+  avatarUrl?: string | null;
   totalTasks: number;
   completedTasks: number;
   inProgressTasks: number;

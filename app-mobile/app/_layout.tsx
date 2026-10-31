@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/ui';
+import { AnimatedSplashOverlay, ToastProvider } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { colors, stackScreenOptions } from '@/theme';
 
@@ -39,6 +39,10 @@ function RootNavigator() {
         <Stack.Screen
           name="projects/[id]/milestones"
           options={{ title: 'Timeline & Milestones', headerShown: true }}
+        />
+        <Stack.Screen
+          name="projects/[id]/timeline"
+          options={{ title: 'Visual Timeline & Calendar', headerShown: true }}
         />
         <Stack.Screen
           name="projects/[id]/meetings/index"
@@ -82,9 +86,11 @@ function RootNavigator() {
  */
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 

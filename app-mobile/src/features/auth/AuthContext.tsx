@@ -215,12 +215,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         cleanedAvatar &&
         !cleanedAvatar.startsWith('https://') &&
         !cleanedAvatar.startsWith('http://') &&
+        !cleanedAvatar.startsWith('file://') &&
+        !cleanedAvatar.startsWith('content://') &&
         !cleanedAvatar.startsWith('data:image/')
       ) {
         return {
           data: null,
           error: new Error(
-            'Profile picture URL must use https://, http://, or a valid image preset.'
+            'Profile picture URL must use https://, http://, device photo, or a valid image preset.'
           ),
         };
       }
@@ -266,8 +268,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const { data, error } = await supabase
           .from('profiles')
-          .update(updates)
-          .eq('id', user.id)
+          .upsert({
+            id: user.id,
+            email: user.email ?? profile?.email ?? null,
+            full_name:
+              cleanedName ??
+              profile?.full_name ??
+              user.email?.split('@')[0] ??
+              'Student Member',
+            ...updates,
+          })
           .select('*')
           .single();
 

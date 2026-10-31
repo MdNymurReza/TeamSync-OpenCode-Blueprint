@@ -221,7 +221,12 @@ export default function ProjectMembersScreen() {
                 key={m.id}
                 style={[styles.memberRow, i > 0 && styles.memberRowBorder]}
               >
-                <Avatar name={displayName} size={44} style={styles.avatarSpacing} />
+                <Avatar
+                  name={displayName}
+                  avatarUrl={m.profile?.avatar_url}
+                  size={44}
+                  style={styles.avatarSpacing}
+                />
 
                 <View style={styles.memberInfo}>
                   <View style={styles.nameRow}>

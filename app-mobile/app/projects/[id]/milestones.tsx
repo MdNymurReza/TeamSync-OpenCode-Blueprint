@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {
@@ -40,6 +40,7 @@ const MANUAL_PROGRESS_STEPS = [0, 25, 50, 75, 100] as const;
 
 export default function ProjectMilestonesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const { user } = useAuth();
 
   const [project, setProject] = useState<ProjectWithRole | null>(null);
@@ -353,13 +354,22 @@ export default function ProjectMilestonesScreen() {
                 Milestones & Timeline
               </Text>
             </View>
-            <Button
-              title="Add Milestone"
-              variant="primary"
-              size="sm"
-              leftIcon={<Ionicons name="add" size={16} color={colors.surface} />}
-              onPress={openCreateModal}
-            />
+            <View style={{ flexDirection: 'row', gap: spacing.xs, alignItems: 'center' }}>
+              <Button
+                title="Calendar"
+                variant="outline"
+                size="sm"
+                leftIcon={<Ionicons name="calendar-outline" size={14} color={colors.primary} />}
+                onPress={() => router.push(`/projects/${id}/timeline` as Href)}
+              />
+              <Button
+                title="Add Milestone"
+                variant="primary"
+                size="sm"
+                leftIcon={<Ionicons name="add" size={16} color={colors.surface} />}
+                onPress={openCreateModal}
+              />
+            </View>
           </View>
 
           <ProgressBar
