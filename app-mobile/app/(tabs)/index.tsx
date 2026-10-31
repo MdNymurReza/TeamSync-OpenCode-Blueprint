@@ -355,7 +355,7 @@ export default function HomeScreen() {
         eyebrow={dateLabel}
         title={firstName ? `${getGreeting(now)}, ${firstName}` : 'Welcome to MelBond'}
         subtitle="One project, one organized student workspace."
-        accessory={<Avatar name={displayName} size={48} />}
+        accessory={<Avatar name={displayName} avatarUrl={profile?.avatar_url} size={48} />}
       />
 
       {errorMessage ? (

@@ -9,8 +9,8 @@ import React, {
 import { Session, User } from '@supabase/supabase-js';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase/client';
-import { Profile } from '@/types/database';
-import { AuthContextValue, SignUpParams } from './types';
+import { Profile, ProfileUpdate } from '@/types/database';
+import { AuthContextValue, SignUpParams, UpdateProfileParams } from './types';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -200,6 +200,94 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const updateProfile = useCallback(
+    async (
+      params: UpdateProfileParams
+    ): Promise<{ data: Profile | null; error: Error | null }> => {
+      const cleanedName = params.fullName !== undefined ? params.fullName.trim() : undefined;
+      if (cleanedName !== undefined && !cleanedName) {
+        return { data: null, error: new Error('Full name is required.') };
+      }
+
+      const cleanedAvatar =
+        params.avatarUrl !== undefined ? params.avatarUrl?.trim() || null : undefined;
+      if (
+        cleanedAvatar &&
+        !cleanedAvatar.startsWith('https://') &&
+        !cleanedAvatar.startsWith('http://') &&
+        !cleanedAvatar.startsWith('data:image/')
+      ) {
+        return {
+          data: null,
+          error: new Error(
+            'Profile picture URL must use https://, http://, or a valid image preset.'
+          ),
+        };
+      }
+
+      const nowIso = new Date().toISOString();
+      const fallbackNextProfile: Profile = {
+        id: profile?.id ?? user?.id ?? 'local-preview-user',
+        email: profile?.email ?? user?.email ?? 'student@university.edu',
+        full_name: cleanedName ?? profile?.full_name ?? 'Student Member',
+        avatar_url:
+          cleanedAvatar !== undefined ? cleanedAvatar : (profile?.avatar_url ?? null),
+        university:
+          params.university !== undefined
+            ? params.university?.trim() || null
+            : (profile?.university ?? null),
+        department:
+          params.department !== undefined
+            ? params.department?.trim() || null
+            : (profile?.department ?? null),
+        created_at: profile?.created_at ?? nowIso,
+        updated_at: nowIso,
+      };
+
+      if (!isSupabaseConfigured || !user?.id) {
+        setProfile(fallbackNextProfile);
+        return { data: fallbackNextProfile, error: null };
+      }
+
+      try {
+        const updates: ProfileUpdate = {
+          updated_at: nowIso,
+        };
+        if (cleanedName !== undefined) updates.full_name = cleanedName;
+        if (params.university !== undefined) {
+          updates.university = params.university?.trim() || null;
+        }
+        if (params.department !== undefined) {
+          updates.department = params.department?.trim() || null;
+        }
+        if (cleanedAvatar !== undefined) {
+          updates.avatar_url = cleanedAvatar;
+        }
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', user.id)
+          .select('*')
+          .single();
+
+        if (error) {
+          return { data: null, error: new Error(error.message) };
+        }
+
+        const updatedRow = (data as Profile) ?? fallbackNextProfile;
+        setProfile(updatedRow);
+        return { data: updatedRow, error: null };
+      } catch (err) {
+        return {
+          data: null,
+          error: err instanceof Error ? err : new Error('Failed to update profile'),
+        };
+      }
+    },
+    [profile, user]
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
@@ -212,8 +300,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signOut,
       resetPassword,
       refreshProfile,
+      updateProfile,
     }),
-    [session, user, profile, isLoading, signIn, signUp, signOut, resetPassword, refreshProfile]
+    [
+      session,
+      user,
+      profile,
+      isLoading,
+      signIn,
+      signUp,
+      signOut,
+      resetPassword,
+      refreshProfile,
+      updateProfile,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

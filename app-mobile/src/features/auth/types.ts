@@ -10,6 +10,13 @@ export interface SignUpParams {
   department?: string;
 }
 
+export interface UpdateProfileParams {
+  fullName?: string;
+  university?: string | null;
+  department?: string | null;
+  avatarUrl?: string | null;
+}
+
 export interface AuthContextValue {
   session: Session | null;
   user: User | null;
@@ -21,4 +28,7 @@ export interface AuthContextValue {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   refreshProfile: () => Promise<void>;
+  updateProfile?: (
+    params: UpdateProfileParams
+  ) => Promise<{ data: Profile | null; error: Error | null }>;
 }

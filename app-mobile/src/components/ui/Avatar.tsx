@@ -1,11 +1,13 @@
-import React from 'react';
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import React, { useState } from 'react';
+import { Image, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { avatarPalette, colors, radii } from '@/theme';
 
 export interface AvatarProps {
   /** Display name used for initials and deterministic color. */
   name: string;
+  /** Optional profile picture URL or data URI. Falls back to initials when absent or invalid. */
+  avatarUrl?: string | null;
   size?: number;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -31,10 +33,20 @@ export function getAvatarColor(name: string): string {
 }
 
 /**
- * Initials avatar. Decorative by default: the adjacent name text carries the
- * accessible label, so screen readers do not announce initials twice.
+ * Profile avatar supporting both uploaded profile pictures (`avatarUrl`)
+ * and deterministic initials fallback.
  */
-export function Avatar({ name, size = 40, style, testID }: AvatarProps) {
+export function Avatar({ name, avatarUrl, size = 40, style, testID }: AvatarProps) {
+  const [imageError, setImageError] = useState(false);
+  const trimmedUrl = avatarUrl?.trim() ?? '';
+  const showImage =
+    Boolean(trimmedUrl) &&
+    !imageError &&
+    (trimmedUrl.startsWith('https://') ||
+      trimmedUrl.startsWith('http://') ||
+      trimmedUrl.startsWith('file://') ||
+      trimmedUrl.startsWith('data:image/'));
+
   return (
     <View
       testID={testID}
@@ -48,12 +60,27 @@ export function Avatar({ name, size = 40, style, testID }: AvatarProps) {
         style,
       ]}
     >
-      <Text
-        style={[styles.text, { fontSize: Math.round(size * 0.38) }]}
-        allowFontScaling={false}
-      >
-        {getInitials(name)}
-      </Text>
+      {showImage ? (
+        <Image
+          testID={testID ? `${testID}-image` : 'avatar-image'}
+          source={{ uri: trimmedUrl }}
+          style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+          }}
+          resizeMode="cover"
+          onError={() => setImageError(true)}
+          accessibilityIgnoresInvertColors
+        />
+      ) : (
+        <Text
+          style={[styles.text, { fontSize: Math.round(size * 0.38) }]}
+          allowFontScaling={false}
+        >
+          {getInitials(name)}
+        </Text>
+      )}
     </View>
   );
 }
@@ -63,6 +90,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   text: {
     color: colors.textInverse,
